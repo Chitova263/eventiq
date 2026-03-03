@@ -1,0 +1,50 @@
+{
+  "name": "eventiq",
+  "version": "0.0.1",
+  "description": "A React event management library",
+  "type": "module",
+  "main": "./dist/eventiq.umd.cjs",
+  "module": "./dist/eventiq.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/eventiq.es.js",
+      "require": "./dist/eventiq.umd.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "prettier": "3.8.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "keywords": [
+    "react",
+    "events",
+    "eventiq"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.11.2"
+  }
+}

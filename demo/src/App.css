@@ -1,0 +1,313 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+#root {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #c9d1d9;
+  background: #0d1117;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #21262d;
+}
+
+.header-left h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f0f6fc;
+  letter-spacing: -0.02em;
+}
+
+.header-left h1 span {
+  color: #646cff;
+}
+
+.header-sub {
+  font-size: 0.8rem;
+  color: #484f58;
+  margin-top: 0.25rem;
+}
+
+/* Button */
+.btn {
+  padding: 0.55rem 1.2rem;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: #21262d;
+  color: #c9d1d9;
+}
+
+.btn:hover {
+  background: #30363d;
+  border-color: #484f58;
+}
+
+.btn-primary {
+  background: #646cff;
+  border-color: #646cff;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #535bf2;
+  border-color: #535bf2;
+}
+
+/* Stats bar */
+.stats-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  color: #8b949e;
+}
+
+.stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stat-dot[data-status='READY'] { background: #646cff; }
+.stat-dot[data-status='RUNNING'] { background: #d29922; }
+.stat-dot[data-status='COMPLETE'] { background: #3fb950; }
+.stat-dot[data-status='FAILED'] { background: #f85149; }
+.stat-dot[data-status='SKIPPED'] { background: #484f58; }
+.stat-dot[data-status='BLOCKED'] { background: #30363d; }
+
+.stat-count {
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+/* Event list */
+.event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.event-card {
+  display: grid;
+  grid-template-columns: 4px 1fr;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.event-card:hover {
+  border-color: #30363d;
+}
+
+.event-indicator {
+  background: #30363d;
+  transition: background 0.3s;
+}
+
+.event-card[data-status='READY'] .event-indicator { background: #646cff; }
+.event-card[data-status='RUNNING'] .event-indicator { background: #d29922; }
+.event-card[data-status='COMPLETE'] .event-indicator { background: #3fb950; }
+.event-card[data-status='FAILED'] .event-indicator { background: #f85149; }
+.event-card[data-status='SKIPPED'] .event-indicator { background: #484f58; }
+
+.event-content {
+  padding: 0.85rem 1rem;
+}
+
+.event-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.event-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f0f6fc;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.event-badges {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border: 1px solid transparent;
+}
+
+.badge-status {
+  background: #1c2028;
+  color: #484f58;
+  border-color: #21262d;
+}
+
+.badge-status[data-status='READY'] {
+  background: rgba(100, 108, 255, 0.1);
+  color: #646cff;
+  border-color: rgba(100, 108, 255, 0.2);
+}
+
+.badge-status[data-status='RUNNING'] {
+  background: rgba(210, 153, 34, 0.1);
+  color: #d29922;
+  border-color: rgba(210, 153, 34, 0.2);
+}
+
+.badge-status[data-status='COMPLETE'] {
+  background: rgba(63, 185, 80, 0.1);
+  color: #3fb950;
+  border-color: rgba(63, 185, 80, 0.2);
+}
+
+.badge-status[data-status='FAILED'] {
+  background: rgba(248, 81, 73, 0.1);
+  color: #f85149;
+  border-color: rgba(248, 81, 73, 0.2);
+}
+
+.badge-status[data-status='SKIPPED'] {
+  background: rgba(72, 79, 88, 0.15);
+  color: #484f58;
+  border-color: rgba(72, 79, 88, 0.3);
+}
+
+.badge-outcome {
+  background: #1c2028;
+  color: #8b949e;
+  border-color: #21262d;
+}
+
+.badge-duration {
+  background: #1c2028;
+  color: #8b949e;
+  border-color: #21262d;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.6rem;
+}
+
+/* Running pulse animation */
+.event-card[data-status='RUNNING'] {
+  border-color: rgba(210, 153, 34, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.event-card[data-status='RUNNING'] .event-indicator {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Event details row */
+.event-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.event-deps-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.event-deps {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+}
+
+.event-deps-label {
+  color: #484f58;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dep-tag {
+  padding: 0.1rem 0.4rem;
+  background: #1c2028;
+  border: 1px solid #21262d;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: #8b949e;
+}
+
+.event-timestamps {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.65rem;
+  color: #484f58;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  flex-shrink: 0;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #484f58;
+  border: 1px dashed #21262d;
+  border-radius: 8px;
+}
+
+.empty-state p {
+  font-size: 0.9rem;
+}
+
+/* Skipped/blocked dim */
+.event-card[data-status='SKIPPED'] .event-content,
+.event-card[data-status='BLOCKED'] .event-content {
+  opacity: 0.5;
+}
+
+.event-card[data-status='SKIPPED']:hover .event-content,
+.event-card[data-status='BLOCKED']:hover .event-content {
+  opacity: 0.8;
+}
