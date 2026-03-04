@@ -1,14 +1,24 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { eventiqReducer, eventiqListener } from '../../src/index.ts';
+import { createEventiq } from '../../src/index.ts';
+import type {
+  DemoEventNameType,
+  DemoExecutableConfigurationNameType,
+} from './App.tsx';
+import type { EventiqType } from '../../src/createEventiq.ts';
+
+export const eventiq: EventiqType<
+  DemoExecutableConfigurationNameType,
+  DemoEventNameType
+> = createEventiq();
 
 export const store = configureStore({
   reducer: {
-    eventiq: eventiqReducer,
+    eventiq: eventiq.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: true,
-    }).prepend(eventiqListener.middleware),
+    }).prepend(eventiq.listener.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

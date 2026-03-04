@@ -1,11 +1,29 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { eventConfigEnqueued, useWhenEventStarted } from '../../src/index.ts';
-import type { EventConfig, ExecutableEvent, ExecutableEventStatus } from '../../src/index.ts';
+import type {
+  EventConfig,
+  ExecutableEvent,
+  ExecutableEventStatus,
+} from '../../src/index.ts';
 import type { RootState } from './store.ts';
+import { eventiq } from './store.ts';
 import './App.css';
-import { eventSucceeded } from '../../src/eventiqActions.ts';
 
-const exampleConfig: EventConfig<'user-signup', string> = {
+export type DemoEventNameType =
+  | 'bootstrap'
+  | 'config'
+  | 'settings'
+  | 'validate-input'
+  | 'create-user'
+  | 'send-email'
+  | 'log-analytics'
+  | 'redirect';
+
+export type DemoExecutableConfigurationNameType = 'user-signup' | 'user-reset';
+
+const exampleConfig: EventConfig<
+  DemoExecutableConfigurationNameType,
+  DemoEventNameType
+> = {
   name: 'user-signup',
   events: [
     { name: 'bootstrap', needs: [] },
@@ -36,7 +54,9 @@ function getDuration(start: number | null, end: number | null): string | null {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(2)}s`;
 }
 
-function countByStatus(queue: ExecutableEvent<string>[]): Record<string, number> {
+function countByStatus(
+  queue: ExecutableEvent<string>[],
+): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const event of queue) {
     counts[event.status] = (counts[event.status] || 0) + 1;
@@ -44,9 +64,16 @@ function countByStatus(queue: ExecutableEvent<string>[]): Record<string, number>
   return counts;
 }
 
-const STATUS_ORDER: ExecutableEventStatus[] = ['READY', 'RUNNING', 'COMPLETE', 'FAILED', 'SKIPPED', 'BLOCKED'];
+const STATUS_ORDER: ExecutableEventStatus[] = [
+  'READY',
+  'RUNNING',
+  'COMPLETE',
+  'FAILED',
+  'SKIPPED',
+  'BLOCKED',
+];
 
-function EventCard({ event }: { event: ExecutableEvent<string> }) {
+function EventCard({ event }: { event: ExecutableEvent<DemoEventNameType> }) {
   const duration = getDuration(event.startTime, event.endTime);
 
   return (
@@ -73,7 +100,9 @@ function EventCard({ event }: { event: ExecutableEvent<string> }) {
               <div className="event-deps">
                 <span className="event-deps-label">needs</span>
                 {event.needs.map((n) => (
-                  <span key={n.name} className="dep-tag">{n.name}</span>
+                  <span key={n.name} className="dep-tag">
+                    {n.name}
+                  </span>
                 ))}
               </div>
             )}
@@ -81,7 +110,9 @@ function EventCard({ event }: { event: ExecutableEvent<string> }) {
               <div className="event-deps">
                 <span className="event-deps-label">unlocks</span>
                 {event.dependants.map((d) => (
-                  <span key={d.name} className="dep-tag">{d.name}</span>
+                  <span key={d.name} className="dep-tag">
+                    {d.name}
+                  </span>
                 ))}
               </div>
             )}
@@ -101,10 +132,10 @@ function App() {
   const eventQueue = useSelector((state: RootState) => state.eventiq.queue);
   const statusCounts = countByStatus(eventQueue);
 
-  useWhenEventStarted<string>('bootstrap', async () => {
+  eventiq.hooks.useWhenEventStarted('bootstrap', async () => {
     new Promise<void>((resolve) => {
       setTimeout(() => {
-        dispatch(eventSucceeded({ event: 'bootstrap' }));
+        dispatch(eventiq.actions.eventSucceeded({ event: 'bootstrap' }));
         resolve();
       }, 5000);
     });
@@ -114,12 +145,16 @@ function App() {
     <div>
       <div className="header">
         <div className="header-left">
-          <h1><span>eventiq</span> demo</h1>
+          <h1>
+            <span>eventiq</span> demo
+          </h1>
           <div className="header-sub">user-signup workflow</div>
         </div>
         <button
           className="btn btn-primary"
-          onClick={() => dispatch(eventConfigEnqueued(exampleConfig))}
+          onClick={() =>
+            dispatch(eventiq.actions.eventConfigEnqueued(exampleConfig))
+          }
         >
           Run Pipeline
         </button>
