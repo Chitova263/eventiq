@@ -34,8 +34,7 @@ export function transformToExecutableEvents<TEventName extends string>(
   }
 
   for (const executableEvent of eventMap.values()) {
-    executableEvent.status =
-      executableEvent.needs.length === 0 ? 'READY' : 'BLOCKED';
+    executableEvent.status = executableEvent.needs.length === 0 ? 'READY' : 'BLOCKED';
   }
 
   return Array.from(eventMap.values());
@@ -46,35 +45,24 @@ export function updateEvent(
   name: string,
   updates: Partial<ExecutableEvent<string>>,
 ): ExecutableEvent<string>[] {
-  return queue.map((event) =>
-    event.name === name ? { ...event, ...updates } : event,
-  );
+  return queue.map((event) => (event.name === name ? { ...event, ...updates } : event));
 }
 
-export function unblockDependants(
-  queue: ExecutableEvent<string>[],
-): ExecutableEvent<string>[] {
+export function unblockDependants(queue: ExecutableEvent<string>[]): ExecutableEvent<string>[] {
   return queue.map((event) => {
     if (event.status !== 'BLOCKED') return event;
     const allNeedsMet = event.needs.every((need) => {
       const actual = queue.find((e) => e.name === need.name);
-      return (
-        actual && (actual.status === 'COMPLETE' || actual.status === 'SKIPPED')
-      );
+      return actual && (actual.status === 'COMPLETE' || actual.status === 'SKIPPED');
     });
     return allNeedsMet ? { ...event, status: 'READY' as const } : event;
   });
 }
 
-export function skipDependants(
-  queue: ExecutableEvent<string>[],
-  failedName: string,
-): ExecutableEvent<string>[] {
+export function skipDependants(queue: ExecutableEvent<string>[], failedName: string): ExecutableEvent<string>[] {
   let updated = queue.map((event) => {
     if (event.status !== 'BLOCKED') return event;
-    const dependsOnFailed = event.needs.some(
-      (need) => need.name === failedName,
-    );
+    const dependsOnFailed = event.needs.some((need) => need.name === failedName);
     if (!dependsOnFailed) return event;
     return {
       ...event,
@@ -84,9 +72,7 @@ export function skipDependants(
     };
   });
 
-  const newlySkipped = updated.filter(
-    (e, i) => e.status === 'SKIPPED' && queue[i].status !== 'SKIPPED',
-  );
+  const newlySkipped = updated.filter((e, i) => e.status === 'SKIPPED' && queue[i].status !== 'SKIPPED');
   for (const skipped of newlySkipped) {
     updated = skipDependants(updated, skipped.name);
   }

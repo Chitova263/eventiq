@@ -33,8 +33,7 @@ export function Receiver() {
       <ul style={{ textAlign: 'left', maxHeight: 200, overflow: 'auto' }}>
         {messages.map((msg) => (
           <li key={msg.timestamp}>
-            {msg.text}{' '}
-            <small>({new Date(msg.timestamp).toLocaleTimeString()})</small>
+            {msg.text} <small>({new Date(msg.timestamp).toLocaleTimeString()})</small>
           </li>
         ))}
       </ul>

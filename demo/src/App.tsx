@@ -1,9 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import type {
-  EventConfig,
-  ExecutableEvent,
-  ExecutableEventStatus,
-} from '../../src/index.ts';
+import type { EventConfig, ExecutableEvent, ExecutableEventStatus } from '../../src/index.ts';
 import type { RootState } from './store.ts';
 import { eventiq } from './store.ts';
 import './App.css';
@@ -20,16 +16,13 @@ export type DemoEventNameType =
 
 export type DemoExecutableConfigurationNameType = 'user-signup' | 'user-reset';
 
-const exampleConfig: EventConfig<
-  DemoExecutableConfigurationNameType,
-  DemoEventNameType
-> = {
+const exampleConfig: EventConfig<DemoExecutableConfigurationNameType, DemoEventNameType> = {
   name: 'user-signup',
   events: [
     { name: 'bootstrap', needs: [] },
     { name: 'config', needs: ['bootstrap'] },
     { name: 'settings', needs: ['bootstrap'] },
-    { name: 'validate-input', needs: [] },
+    { name: 'validate-input', needs: ['settings'] },
     { name: 'create-user', needs: ['validate-input'] },
     { name: 'send-email', needs: ['create-user'] },
     { name: 'log-analytics', needs: ['create-user'] },
@@ -54,9 +47,7 @@ function getDuration(start: number | null, end: number | null): string | null {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(2)}s`;
 }
 
-function countByStatus(
-  queue: ExecutableEvent<string>[],
-): Record<string, number> {
+function countByStatus(queue: ExecutableEvent<string>[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const event of queue) {
     counts[event.status] = (counts[event.status] || 0) + 1;
@@ -64,14 +55,7 @@ function countByStatus(
   return counts;
 }
 
-const STATUS_ORDER: ExecutableEventStatus[] = [
-  'READY',
-  'RUNNING',
-  'COMPLETE',
-  'FAILED',
-  'SKIPPED',
-  'BLOCKED',
-];
+const STATUS_ORDER: ExecutableEventStatus[] = ['READY', 'RUNNING', 'COMPLETE', 'FAILED', 'SKIPPED', 'BLOCKED'];
 
 function EventCard({ event }: { event: ExecutableEvent<DemoEventNameType> }) {
   const duration = getDuration(event.startTime, event.endTime);
@@ -86,12 +70,8 @@ function EventCard({ event }: { event: ExecutableEvent<DemoEventNameType> }) {
             <span className="badge badge-status" data-status={event.status}>
               {event.status}
             </span>
-            {event.outcome && (
-              <span className="badge badge-outcome">{event.outcome}</span>
-            )}
-            {duration && (
-              <span className="badge badge-duration">{duration}</span>
-            )}
+            {event.outcome && <span className="badge badge-outcome">{event.outcome}</span>}
+            {duration && <span className="badge badge-duration">{duration}</span>}
           </div>
         </div>
         <div className="event-row-bottom">
@@ -129,15 +109,51 @@ function EventCard({ event }: { event: ExecutableEvent<DemoEventNameType> }) {
 
 function App() {
   const dispatch = useDispatch();
-  const eventQueue = useSelector((state: RootState) => state.eventiq.queue);
-  const statusCounts = countByStatus(eventQueue);
+  const allEvents = useSelector((state: RootState) => state.eventiq.queue.flatMap((config) => config.events));
+  const statusCounts = countByStatus(allEvents);
 
-  eventiq.hooks.useWhenEventStarted('bootstrap', async () => {
+  eventiq.useEventStarted('bootstrap', async () => {
     new Promise<void>((resolve) => {
       setTimeout(() => {
-        dispatch(eventiq.actions.eventSucceeded({ event: 'bootstrap' }));
+        dispatch(eventiq.actions.succeeded({ event: 'bootstrap' }));
         resolve();
       }, 5000);
+    });
+  });
+
+  eventiq.useEventStarted('config', async () => {
+    new Promise<void>((resolve) => {
+      setTimeout(() => {
+        dispatch(eventiq.actions.succeeded({ event: 'config' }));
+        resolve();
+      }, 3000);
+    });
+  });
+
+  eventiq.useEventStarted('settings', async () => {
+    new Promise<void>((resolve) => {
+      setTimeout(() => {
+        dispatch(eventiq.actions.skipped({ event: 'settings' }));
+        resolve();
+      }, 1000);
+    });
+  });
+
+  eventiq.useEventStarted('validate-input', async () => {
+    new Promise<void>((resolve) => {
+      setTimeout(() => {
+        dispatch(eventiq.actions.succeeded({ event: 'validate-input' }));
+        resolve();
+      }, 1000);
+    });
+  });
+
+  eventiq.useEventStarted('create-user', async () => {
+    new Promise<void>((resolve) => {
+      setTimeout(() => {
+        dispatch(eventiq.actions.succeeded({ event: 'create-user' }));
+        resolve();
+      }, 1000);
     });
   });
 
@@ -150,17 +166,12 @@ function App() {
           </h1>
           <div className="header-sub">user-signup workflow</div>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() =>
-            dispatch(eventiq.actions.eventConfigEnqueued(exampleConfig))
-          }
-        >
+        <button className="btn btn-primary" onClick={() => dispatch(eventiq.actions.enqueued(exampleConfig))}>
           Run Pipeline
         </button>
       </div>
 
-      {eventQueue.length > 0 && (
+      {allEvents.length > 0 && (
         <div className="stats-bar">
           {STATUS_ORDER.filter((s) => statusCounts[s]).map((status) => (
             <div key={status} className="stat">
@@ -172,13 +183,13 @@ function App() {
         </div>
       )}
 
-      {eventQueue.length === 0 ? (
+      {allEvents.length === 0 ? (
         <div className="empty-state">
           <p>No events queued. Click "Run Pipeline" to start.</p>
         </div>
       ) : (
         <div className="event-list">
-          {eventQueue.map((event) => (
+          {allEvents.map((event) => (
             <EventCard key={event.id} event={event} />
           ))}
         </div>

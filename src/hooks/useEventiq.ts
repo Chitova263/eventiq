@@ -19,9 +19,7 @@ export function useEventiq(options: EventiqOptions = {}) {
       }
       const handlers = listeners.get(event)!;
       if (handlers.size >= maxListeners) {
-        logger.warn(
-          `Max listeners (${maxListeners}) reached for event "${event}"`,
-        );
+        logger.warn(`Max listeners (${maxListeners}) reached for event "${event}"`);
         return () => {};
       }
       handlers.add(handler as EventHandler);
