@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ListenerMiddlewareInstance, ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
-import { EventiqEventSchedularActions, EventiqStore } from '../types/planEvent.ts';
+import type { EventiqEventSchedularActions, EventiqStore } from '../types/planEvent.ts';
 
 export function createEventiqHooks<TEventName extends string>(
   listener: ListenerMiddlewareInstance<EventiqStore, ThunkDispatch<EventiqStore, unknown, UnknownAction>>,

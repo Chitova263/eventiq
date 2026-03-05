@@ -1,9 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit';
-import type { Middleware, UnknownAction } from '@reduxjs/toolkit';
-import { createEventiq } from '../../src/index.ts';
+import type { Middleware } from '@reduxjs/toolkit';
+import { createEventiq } from 'eventiq';
+import type { EventiqType } from 'eventiq';
 import { apiSlice } from './api/apiSlice.ts';
 import type { DemoEventName, DemoPlanName } from './types.ts';
-import type { EventiqType } from '../../src/core/createEventiq.ts';
 
 export const eventiq: EventiqType<DemoPlanName, DemoEventName> = createEventiq();
 
@@ -14,9 +14,9 @@ export interface ActionLogEntry {
 }
 export const actionLog: ActionLogEntry[] = [];
 
-const actionLogMiddleware: Middleware = () => (next) => (action: UnknownAction) => {
+const actionLogMiddleware: Middleware = () => (next) => (action) => {
   const result = next(action);
-  actionLog.push({ type: action.type as string, timestamp: Date.now() });
+  actionLog.push({ type: (action as { type: string }).type, timestamp: Date.now() });
   return result;
 };
 

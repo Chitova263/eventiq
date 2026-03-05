@@ -1,5 +1,5 @@
 import { createAction } from '@reduxjs/toolkit';
-import { ExecutionPlan, EventiqActions, EventiqEventSchedularActions } from '../types/planEvent.ts';
+import type { ExecutionPlan, EventiqActions, EventiqEventSchedularActions } from '../types/planEvent.ts';
 
 export function createEventiqActions<
   TExecutableConfigurationName extends string,

@@ -2,7 +2,7 @@ import { logger } from '../utils/logger.ts';
 import { createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit';
 import { SchedulerUtil } from '../utils/schedularUtil.ts';
 import { StoreUtil } from '../utils/storeUtil.ts';
-import { EventiqActions, EventiqEventSchedularActions, EventiqStore } from '../types/planEvent.ts';
+import type { EventiqActions, EventiqEventSchedularActions, EventiqStore } from '../types/planEvent.ts';
 
 export function createEventiqListenerMiddleware<TExecutableConfigurationName extends string, TEventName extends string>(
   eventiqPublicActions: EventiqActions<TExecutableConfigurationName, TEventName>,

@@ -1,5 +1,5 @@
 import { EventiqStoreUtils } from '../utils/eventiqUtils.ts';
-import { EventiqActions, EventiqEventSchedularActions, EventiqStoreState } from '../types/planEvent.ts';
+import type { EventiqActions, EventiqEventSchedularActions, EventiqStoreState } from '../types/planEvent.ts';
 import { logger } from '../utils/logger.ts';
 
 export function createEventiqReducer<TPlanName extends string, TEventName extends string>(

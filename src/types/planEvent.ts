@@ -1,4 +1,4 @@
-import { ActionCreatorWithPayload, ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
+import type { ActionCreatorWithPayload, ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
 
 export type PlanEvent<TEventName extends string> = {
   name: TEventName;

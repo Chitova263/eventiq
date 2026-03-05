@@ -1,6 +1,13 @@
 {
-  "name": "eventiq",
-  "version": "0.0.1",
+  "name": "@chitova263/eventiq",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Chitova263/eventiq.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "version": "0.0.0",
   "description": "A React event management library",
   "type": "module",
   "main": "./dist/eventiq.umd.cjs",

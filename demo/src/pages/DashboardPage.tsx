@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import type { ExecutionPlan, ExecutableEvent, ExecutionStatus } from '../../../src/index.ts';
+import type { ExecutionPlan, ExecutableEvent, ExecutionStatus } from 'eventiq';
 import type { RootState } from '../store.ts';
 import type { DashboardEventName, DemoPlanName } from '../types.ts';
 import { eventiq } from '../store.ts';

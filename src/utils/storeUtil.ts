@@ -1,4 +1,4 @@
-import { ExecutableEvent, ExecutablePlan } from '../types/planEvent.ts';
+import type { ExecutableEvent, ExecutablePlan } from '../types/planEvent.ts';
 
 export class StoreUtil {
   public static getReadyEvents(queue: ExecutablePlan<string, string>[]): ExecutableEvent<string>[] {
