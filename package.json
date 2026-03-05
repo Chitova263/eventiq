@@ -7,7 +7,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A React event management library",
   "type": "module",
   "main": "./dist/eventiq.umd.cjs",
