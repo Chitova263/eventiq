@@ -8,7 +8,7 @@ A dependency-aware event orchestration library for React + Redux Toolkit. Define
 
 ## Why eventiq
 
-Modern applications often involve complex async workflows — interdependent API calls, ordered initialization sequences, and coordinated loading states. eventiq provides a declarative approach to defining these workflows as dependency graphs, automatically resolving execution order and maximizing concurrency.
+Modern applications often involve complex async workflows - interdependent API calls, ordered initialization sequences, and coordinated loading states. eventiq provides a declarative approach to defining these workflows as dependency graphs, automatically resolving execution order and maximizing concurrency.
 
 - **Declarative dependency graphs** - define relationships between events, not execution order
 - **Automatic scheduling** - events execute as soon as their dependencies resolve
@@ -20,7 +20,7 @@ Modern applications often involve complex async workflows — interdependent API
 ## Install
 
 ```bash
-npm install eventiq
+npm install @chitova263/eventiq@0.0.1
 ```
 
 Peer dependencies: `react >= 18`, `react-dom >= 18`, `@reduxjs/toolkit >= 2`
