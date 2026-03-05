@@ -10,12 +10,12 @@ A dependency-aware event orchestration library for React + Redux Toolkit. Define
 
 Modern applications often involve complex async workflows — interdependent API calls, ordered initialization sequences, and coordinated loading states. eventiq provides a declarative approach to defining these workflows as dependency graphs, automatically resolving execution order and maximizing concurrency.
 
-- **Declarative dependency graphs** — define relationships between events, not execution order
-- **Automatic scheduling** — events execute as soon as their dependencies resolve
-- **Parallel execution** — independent events run concurrently for optimal performance
-- **Redux-native** — integrates seamlessly as a standard reducer + listener middleware
-- **React hooks** — subscribe to event lifecycle directly from components
-- **Type-safe** — fully generic over plan and event names
+- **Declarative dependency graphs** - define relationships between events, not execution order
+- **Automatic scheduling** - events execute as soon as their dependencies resolve
+- **Parallel execution** - independent events run concurrently for optimal performance
+- **Redux-native** - integrates seamlessly as a standard reducer + listener middleware
+- **React hooks** - subscribe to event lifecycle directly from components
+- **Type-safe** - fully generic over plan and event names
 
 ## Install
 
