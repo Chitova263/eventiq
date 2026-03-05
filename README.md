@@ -72,7 +72,7 @@ export const apiSlice = createSlice({
 });
 ```
 
-### 3. Set up listeners (async logic lives here, not in components)
+### 3. Set up listeners to handle side effects
 
 ```ts
 // listeners.ts
@@ -110,7 +110,7 @@ eventiq.listener.startListening({
 });
 ```
 
-### 4. Component just dispatches actions
+### 4. Component dispatches actions
 
 ```tsx
 // ProfilePage.tsx
@@ -147,7 +147,7 @@ The component's only job is to dispatch. All API calls, state updates, and event
 
 ## How it works: Realistic API orchestration
 
-Imagine a profile page that loads a user, then fetches their posts, and finally fetches analytics — each step depending on data from the previous one. The key pattern: **components only dispatch actions**, and **all async/API logic lives in listeners**.
+Imagine a profile page that loads a user, then fetches their posts, and finally fetches analytics, each step depending on data from the previous one. The key pattern: **components only dispatch actions**, and **all async/API logic lives in listeners**.
 
 ### 1. Define your app state and actions
 
@@ -193,9 +193,9 @@ const profilePlan: ExecutionPlan<PlanName, EventName> = {
 };
 ```
 
-### 3. Set up listeners (all async logic lives here)
+### 3. Set up listeners
 
-Listeners are standalone — no React, no components. They listen for the actions your component dispatches, do the async work, store results, and signal eventiq.
+Listeners listen for the actions your component dispatches, do the async work, store results, and signal eventiq.
 
 ```ts
 // listeners.ts
@@ -252,9 +252,6 @@ eventiq.listener.startListening({
 ```
 
 ### 4. Component just dispatches actions
-
-The component's only job is to dispatch — it never touches async logic or API calls.
-
 ```tsx
 // ProfilePage.tsx
 function ProfilePage() {
@@ -263,7 +260,9 @@ function ProfilePage() {
     // When eventiq starts each event, dispatch the corresponding action.
     // The listener handles everything from there.
     eventiq.useEventStarted('fetch-user', () => dispatch(fetchUser()));
+
     eventiq.useEventStarted('fetch-posts', () => dispatch(fetchPosts()));
+
     eventiq.useEventStarted('fetch-analytics', () => dispatch(fetchAnalytics()));
 
     return (
@@ -281,9 +280,9 @@ function ProfilePage() {
 4. `eventSucceeded` unblocks `fetch-posts`. The scheduler starts it, the hook dispatches `fetchPosts()`, and the listener takes over again.
 5. This continues until all events complete. If any listener throws, `eventFailed` stops that branch.
 
-### 5. Conditional logic — skip events based on store state
+### 5. Conditional logic : Skip events based on store state
 
-Sometimes you want to skip an event based on what previous steps produced. Check the store in your listener and dispatch `eventSkipped` — eventiq treats it as a completion, so downstream events still unblock.
+Sometimes you want to skip an event based on what previous steps produced. Check the store in your listener and dispatch `eventSkipped` - eventiq treats it as a completion, so downstream events still unblock.
 
 ```ts
 // actions
@@ -300,7 +299,7 @@ const plan: ExecutionPlan<PlanName, EventName> = {
     ],
 };
 
-// listener — skip the API call if user isn't premium
+// listener - skip the API call if user isn't premium
 eventiq.listener.startListening({
     actionCreator: fetchPremiumContent,
     effect: async (action, listenerApi) => {
@@ -322,7 +321,7 @@ eventiq.listener.startListening({
     },
 });
 
-// component — still just dispatches
+// component - still just dispatches
 eventiq.useEventStarted('fetch-premium-content', () => dispatch(fetchPremiumContent()));
 ```
 
