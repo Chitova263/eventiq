@@ -34,7 +34,7 @@ function delay(ms: number): Promise<void> {
 }
 
 export async function fetchUser(): Promise<User> {
-  await delay(1200);
+  await delay(3000);
   return {
     id: 'usr_123',
     name: 'Jane Doe',
@@ -47,7 +47,7 @@ export async function fetchUser(): Promise<User> {
 }
 
 export async function fetchPreferences(settingsId: string): Promise<Preferences> {
-  await delay(800);
+  await delay(5000);
   console.log(`[mock] GET /preferences/${settingsId}`);
   return {
     theme: 'dark',
@@ -58,7 +58,7 @@ export async function fetchPreferences(settingsId: string): Promise<Preferences>
 }
 
 export async function fetchTeams(orgId: string): Promise<Team[]> {
-  await delay(1000);
+  await delay(5000);
   console.log(`[mock] GET /orgs/${orgId}/teams`);
   return [
     { id: 'team_1', name: 'Engineering', members: 12, role: 'Lead' },
@@ -68,13 +68,13 @@ export async function fetchTeams(orgId: string): Promise<Team[]> {
 }
 
 export async function fetchPermissions(userId: string, teamIds: string[]): Promise<string[]> {
-  await delay(600);
+  await delay(5000);
   console.log(`[mock] POST /permissions { user: ${userId}, teams: [${teamIds.join(', ')}] }`);
   return ['admin', 'deploy:prod', 'deploy:staging', 'review:pr', 'manage:team', 'view:billing'];
 }
 
 export async function fetchNotifications(token: string): Promise<Notification[]> {
-  await delay(1400);
+  await delay(7000);
   console.log(`[mock] GET /notifications?token=${token}`);
   return [
     { id: 1, text: 'PR #347 approved', read: false, time: '2m ago' },
