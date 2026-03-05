@@ -4,6 +4,7 @@ import {
   ExecutablePlan,
   ExecutionPlan,
   ExecutableEventDependant,
+  EventiqStoreState,
 } from '../types/planEvent.ts';
 
 export class EventiqStoreUtils {
@@ -14,6 +15,25 @@ export class EventiqStoreUtils {
       name: executionPlan.name,
       events: EventiqStoreUtils.mapPlanEventsToExecutableEvents(executionPlan.events),
     };
+  }
+
+  public static unblockDependants<TPlanName extends string, TEventName extends string>(
+    queue: EventiqStoreState<TPlanName, TEventName>['queue'],
+    completedName: string,
+  ): EventiqStoreState<TPlanName, TEventName>['queue'] {
+    return queue.map((plan) => ({
+      ...plan,
+      events: plan.events.map((event) => {
+        if (event.status !== 'BLOCKED') return event;
+        const dependsOnCompleted = event.needs.some((need) => need.name === completedName);
+        if (!dependsOnCompleted) return event;
+        const allNeedsMet = event.needs.every(
+          (need) => plan.events.find((e) => e.name === need.name)?.status === 'COMPLETE',
+        );
+        if (!allNeedsMet) return event;
+        return { ...event, status: 'READY' as const };
+      }),
+    }));
   }
 
   private static mapPlanEventsToExecutableEvents<TEventName extends string>(

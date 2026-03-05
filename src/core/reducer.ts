@@ -2,25 +2,6 @@ import { EventiqStoreUtils } from '../utils/eventiqUtils.ts';
 import { EventiqActions, EventiqEventSchedularActions, EventiqStoreState } from '../types/planEvent.ts';
 import { logger } from '../utils/logger.ts';
 
-function unblockDependants<TPlanName extends string, TEventName extends string>(
-  queue: EventiqStoreState<TPlanName, TEventName>['queue'],
-  completedName: string,
-): EventiqStoreState<TPlanName, TEventName>['queue'] {
-  return queue.map((plan) => ({
-    ...plan,
-    events: plan.events.map((event) => {
-      if (event.status !== 'BLOCKED') return event;
-      const dependsOnCompleted = event.needs.some((need) => need.name === completedName);
-      if (!dependsOnCompleted) return event;
-      const allNeedsMet = event.needs.every(
-        (need) => plan.events.find((e) => e.name === need.name)?.status === 'COMPLETE',
-      );
-      if (!allNeedsMet) return event;
-      return { ...event, status: 'READY' as const };
-    }),
-  }));
-}
-
 export function createEventiqReducer<TPlanName extends string, TEventName extends string>(
   eventiqActions: EventiqActions<TPlanName, TEventName>,
   eventiqEventSchedularActions: EventiqEventSchedularActions<TEventName>,
@@ -64,7 +45,7 @@ export function createEventiqReducer<TPlanName extends string, TEventName extend
           return { ...event, status: 'COMPLETE' as const, outcome: 'SUCCESS' as const, endTime: Date.now() };
         }),
       }));
-      return { ...state, queue: unblockDependants(updated, action.payload.name) };
+      return { ...state, queue: EventiqStoreUtils.unblockDependants(updated, action.payload.name) };
     }
 
     if (eventiqActions.eventFailed.match(action)) {
@@ -94,11 +75,9 @@ export function createEventiqReducer<TPlanName extends string, TEventName extend
           return { ...event, status: 'COMPLETE' as const, outcome: 'SKIPPED' as const, endTime: Date.now() };
         }),
       }));
-      return { ...state, queue: unblockDependants(updated, action.payload.name) };
+      return { ...state, queue: EventiqStoreUtils.unblockDependants(updated, action.payload.name) };
     }
 
     return state;
   };
 }
-
-export type EventiqReducer = ReturnType<typeof createEventiqReducer>;
