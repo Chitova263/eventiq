@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import type { EventConfig, ExecutableEvent, ExecutableEventStatus } from '../../src/index.ts';
+import type { ExecutionPlan, ExecutableEvent, ExecutionStatus } from '../../src/index.ts';
 import type { RootState } from './store.ts';
 import { eventiq } from './store.ts';
 import './App.css';
@@ -16,7 +16,7 @@ export type DemoEventNameType =
 
 export type DemoExecutableConfigurationNameType = 'user-signup' | 'user-reset';
 
-const exampleConfig: EventConfig<DemoExecutableConfigurationNameType, DemoEventNameType> = {
+const exampleConfig: ExecutionPlan<DemoExecutableConfigurationNameType, DemoEventNameType> = {
   name: 'user-signup',
   events: [
     { name: 'bootstrap', needs: [] },
@@ -55,7 +55,7 @@ function countByStatus(queue: ExecutableEvent<string>[]): Record<string, number>
   return counts;
 }
 
-const STATUS_ORDER: ExecutableEventStatus[] = ['READY', 'RUNNING', 'COMPLETE', 'FAILED', 'SKIPPED', 'BLOCKED'];
+const STATUS_ORDER: ExecutionStatus[] = ['READY', 'RUNNING', 'COMPLETE', 'BLOCKED'];
 
 function EventCard({ event }: { event: ExecutableEvent<DemoEventNameType> }) {
   const duration = getDuration(event.startTime, event.endTime);
@@ -115,7 +115,7 @@ function App() {
   eventiq.useEventStarted('bootstrap', async () => {
     new Promise<void>((resolve) => {
       setTimeout(() => {
-        dispatch(eventiq.actions.succeeded({ event: 'bootstrap' }));
+        dispatch(eventiq.actions.eventSucceeded({ name: 'bootstrap' }));
         resolve();
       }, 5000);
     });
@@ -124,7 +124,7 @@ function App() {
   eventiq.useEventStarted('config', async () => {
     new Promise<void>((resolve) => {
       setTimeout(() => {
-        dispatch(eventiq.actions.succeeded({ event: 'config' }));
+        dispatch(eventiq.actions.eventSucceeded({ name: 'config' }));
         resolve();
       }, 3000);
     });
@@ -133,7 +133,7 @@ function App() {
   eventiq.useEventStarted('settings', async () => {
     new Promise<void>((resolve) => {
       setTimeout(() => {
-        dispatch(eventiq.actions.skipped({ event: 'settings' }));
+        dispatch(eventiq.actions.eventSkipped({ name: 'settings' }));
         resolve();
       }, 1000);
     });
@@ -142,7 +142,7 @@ function App() {
   eventiq.useEventStarted('validate-input', async () => {
     new Promise<void>((resolve) => {
       setTimeout(() => {
-        dispatch(eventiq.actions.succeeded({ event: 'validate-input' }));
+        dispatch(eventiq.actions.eventSucceeded({ name: 'validate-input' }));
         resolve();
       }, 1000);
     });
@@ -151,9 +151,36 @@ function App() {
   eventiq.useEventStarted('create-user', async () => {
     new Promise<void>((resolve) => {
       setTimeout(() => {
-        dispatch(eventiq.actions.succeeded({ event: 'create-user' }));
+        dispatch(eventiq.actions.eventSucceeded({ name: 'create-user' }));
         resolve();
       }, 1000);
+    });
+  });
+
+  eventiq.useEventStarted('send-email', async () => {
+    new Promise<void>((resolve) => {
+      setTimeout(() => {
+        dispatch(eventiq.actions.eventSucceeded({ name: 'send-email' }));
+        resolve();
+      }, 1000);
+    });
+  });
+
+  eventiq.useEventStarted('log-analytics', async () => {
+    new Promise<void>((resolve) => {
+      setTimeout(() => {
+        dispatch(eventiq.actions.eventSucceeded({ name: 'log-analytics' }));
+        resolve();
+      }, 6000);
+    });
+  });
+
+  eventiq.useEventStarted('redirect', async () => {
+    new Promise<void>((resolve) => {
+      setTimeout(() => {
+        dispatch(eventiq.actions.eventSucceeded({ name: 'redirect' }));
+        resolve();
+      }, 6000);
     });
   });
 
@@ -166,7 +193,7 @@ function App() {
           </h1>
           <div className="header-sub">user-signup workflow</div>
         </div>
-        <button className="btn btn-primary" onClick={() => dispatch(eventiq.actions.enqueued(exampleConfig))}>
+        <button className="btn btn-primary" onClick={() => dispatch(eventiq.actions.planSubmitted(exampleConfig))}>
           Run Pipeline
         </button>
       </div>

@@ -1,85 +1,104 @@
-import { createReducer } from '@reduxjs/toolkit';
-import { skipDependants, transformToExecutableEvents, unblockDependants, updateEvent } from '../utils/eventiqUtils.ts';
-import { EventiqActions, EventiqSchedulingActions, EventiqState } from '../types/event.ts';
+import { EventiqStoreUtils } from '../utils/eventiqUtils.ts';
+import { EventiqActions, EventiqEventSchedularActions, EventiqStoreState } from '../types/planEvent.ts';
+import { logger } from '../utils/logger.ts';
 
-const initialState: EventiqState = {
-  queue: [],
-};
+function unblockDependants<TPlanName extends string, TEventName extends string>(
+  queue: EventiqStoreState<TPlanName, TEventName>['queue'],
+  completedName: string,
+): EventiqStoreState<TPlanName, TEventName>['queue'] {
+  return queue.map((plan) => ({
+    ...plan,
+    events: plan.events.map((event) => {
+      if (event.status !== 'BLOCKED') return event;
+      const dependsOnCompleted = event.needs.some((need) => need.name === completedName);
+      if (!dependsOnCompleted) return event;
+      const allNeedsMet = event.needs.every(
+        (need) => plan.events.find((e) => e.name === need.name)?.status === 'COMPLETE',
+      );
+      if (!allNeedsMet) return event;
+      return { ...event, status: 'READY' as const };
+    }),
+  }));
+}
 
-export function createEventiqReducer<TExecutableConfigurationName extends string, TEventName extends string>(
-  actions: EventiqActions<TExecutableConfigurationName, TEventName>,
-  eventiqSchedulingActions: EventiqSchedulingActions<TEventName>,
+export function createEventiqReducer<TPlanName extends string, TEventName extends string>(
+  eventiqActions: EventiqActions<TPlanName, TEventName>,
+  eventiqEventSchedularActions: EventiqEventSchedularActions<TEventName>,
 ) {
-  return createReducer(initialState, (builder) => {
-    builder
-      .addCase(actions.enqueued, (state, action) => {
-        return {
-          ...state,
-          queue: [
-            ...state.queue,
-            {
-              name: action.payload.name,
-              events: transformToExecutableEvents(action.payload.events),
-            },
-          ],
-        };
-      })
-      .addCase(eventiqSchedulingActions.started, (state, action) => {
-        return {
-          queue: state.queue.map((config) => ({
-            ...config,
-            events: updateEvent(config.events, action.payload.event, {
-              status: 'RUNNING',
-              startTime: Date.now(),
-            }),
-          })),
-        };
-      })
-      .addCase(actions.succeeded, (state, action) => {
-        return {
-          queue: state.queue.map((config) => ({
-            ...config,
-            events: unblockDependants(
-              updateEvent(config.events, action.payload.event, {
-                status: 'COMPLETE',
-                outcome: 'SUCCESS',
-                endTime: Date.now(),
-              }),
-            ),
-          })),
-        };
-      })
-      .addCase(eventiqSchedulingActions.failed, (state, action) => {
-        return {
-          queue: state.queue.map((config) => ({
-            ...config,
-            events: skipDependants(
-              updateEvent(config.events, action.payload.event, {
-                status: 'FAILED',
-                outcome: 'FAILURE',
-                endTime: Date.now(),
-              }),
-              action.payload.event,
-            ),
-          })),
-        };
-      })
-      .addCase(eventiqSchedulingActions.skipped, (state, action) => {
-        return {
-          queue: state.queue.map((config) => ({
-            ...config,
-            events: skipDependants(
-              updateEvent(config.events, action.payload.event, {
-                status: 'SKIPPED',
-                outcome: 'SKIPPED',
-                endTime: Date.now(),
-              }),
-              action.payload.event,
-            ),
-          })),
-        };
-      });
-  });
+  const initialState: EventiqStoreState<TPlanName, TEventName> = { queue: [], isQueueHandlingException: false };
+
+  return (
+    state: EventiqStoreState<TPlanName, TEventName> = initialState,
+    action: { type: string; payload?: unknown },
+  ): EventiqStoreState<TPlanName, TEventName> => {
+    if (eventiqActions.planSubmitted.match(action)) {
+      logger.debug(`[scheduling][reducer][action]${action.type}`);
+      const newExecutablePlan = EventiqStoreUtils.mapExecutionPlanExecutablePlan(action.payload);
+      return { ...state, queue: [...state.queue, newExecutablePlan] };
+    }
+
+    if (eventiqEventSchedularActions.started.match(action)) {
+      logger.debug(`[scheduling][reducer][action]${action.type}`);
+      const found = EventiqStoreUtils.findExecutableEventByName(state.queue, action.payload.name);
+      if (!found) return { ...state, isQueueHandlingException: true };
+      return {
+        ...state,
+        queue: state.queue.map((plan) => ({
+          ...plan,
+          events: plan.events.map((event) => {
+            if (event.name !== action.payload.name) return event;
+            return { ...event, status: 'RUNNING' as const, startTime: Date.now() };
+          }),
+        })),
+      };
+    }
+
+    if (eventiqActions.eventSucceeded.match(action)) {
+      logger.debug(`[scheduling][reducer][action]${action.type}`);
+      const found = EventiqStoreUtils.findExecutableEventByName(state.queue, action.payload.name);
+      if (!found) return { ...state, isQueueHandlingException: true };
+      const updated = state.queue.map((plan) => ({
+        ...plan,
+        events: plan.events.map((event) => {
+          if (event.name !== action.payload.name) return event;
+          return { ...event, status: 'COMPLETE' as const, outcome: 'SUCCESS' as const, endTime: Date.now() };
+        }),
+      }));
+      return { ...state, queue: unblockDependants(updated, action.payload.name) };
+    }
+
+    if (eventiqActions.eventFailed.match(action)) {
+      logger.debug(`[scheduling][reducer][action]${action.type}`);
+      const found = EventiqStoreUtils.findExecutableEventByName(state.queue, action.payload.name);
+      if (!found) return { ...state, isQueueHandlingException: true };
+      return {
+        ...state,
+        queue: state.queue.map((plan) => ({
+          ...plan,
+          events: plan.events.map((event) => {
+            if (event.name !== action.payload.name) return event;
+            return { ...event, status: 'COMPLETE' as const, outcome: 'FAILURE' as const, endTime: Date.now() };
+          }),
+        })),
+      };
+    }
+
+    if (eventiqActions.eventSkipped.match(action)) {
+      logger.debug(`[scheduling][reducer][action]${action.type}`);
+      const found = EventiqStoreUtils.findExecutableEventByName(state.queue, action.payload.name);
+      if (!found) return { ...state, isQueueHandlingException: true };
+      const updated = state.queue.map((plan) => ({
+        ...plan,
+        events: plan.events.map((event) => {
+          if (event.name !== action.payload.name) return event;
+          return { ...event, status: 'COMPLETE' as const, outcome: 'SKIPPED' as const, endTime: Date.now() };
+        }),
+      }));
+      return { ...state, queue: unblockDependants(updated, action.payload.name) };
+    }
+
+    return state;
+  };
 }
 
 export type EventiqReducer = ReturnType<typeof createEventiqReducer>;

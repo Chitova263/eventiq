@@ -1,18 +1,19 @@
 import { createEventiqActions } from './actions.ts';
-import { createEventiqSchedulingActions } from './actions.ts';
+import { createEventiqSchedularActions } from './actions.ts';
 import { createEventiqReducer } from './reducer.ts';
 import { createEventiqListenerMiddleware } from './middleware.ts';
 import { createEventiqHooks } from '../hooks/createEventiqHooks.ts';
-import { EventiqActions } from '../types/event.ts';
+import { EventiqActions, EventiqEventSchedularActions } from '../types/planEvent.ts';
 
-export function createEventiq<TExecutableConfigurationName extends string, TEventName extends string>() {
-  const actions: EventiqActions<TExecutableConfigurationName, TEventName> = createEventiqActions();
-  const eventiqSchedulingActions = createEventiqSchedulingActions<TEventName>();
-  const reducer = createEventiqReducer(actions, eventiqSchedulingActions);
-  const listener = createEventiqListenerMiddleware(actions, eventiqSchedulingActions);
-  const hooks = createEventiqHooks(listener, eventiqSchedulingActions);
+export function createEventiq<TPlanName extends string, TEventName extends string>() {
+  const eventiqActions: EventiqActions<TPlanName, TEventName> = createEventiqActions();
+  const eventiqEventSchedularActions: EventiqEventSchedularActions<TEventName> =
+    createEventiqSchedularActions<TEventName>();
+  const reducer = createEventiqReducer(eventiqActions, eventiqEventSchedularActions);
+  const listener = createEventiqListenerMiddleware(eventiqActions, eventiqEventSchedularActions);
+  const hooks = createEventiqHooks(listener, eventiqEventSchedularActions);
 
-  return { actions, reducer, listener, ...hooks };
+  return { actions: eventiqActions, reducer, listener, ...hooks };
 }
 
 export type EventiqType<TExecutableConfigurationName extends string, TEventName extends string> = ReturnType<

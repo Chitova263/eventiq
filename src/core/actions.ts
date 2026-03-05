@@ -1,23 +1,25 @@
 import { createAction } from '@reduxjs/toolkit';
-import { EventConfig, EventiqActions, EventiqSchedulingActions } from '../types/event.ts';
+import { ExecutionPlan, EventiqActions, EventiqEventSchedularActions } from '../types/planEvent.ts';
 
 export function createEventiqActions<
   TExecutableConfigurationName extends string,
   TEventName extends string,
 >(): EventiqActions<TExecutableConfigurationName, TEventName> {
   return {
-    enqueued: createAction<EventConfig<TExecutableConfigurationName, TEventName>>('[eventiq] event config enqueued'),
-    succeeded: createAction<{ event: TEventName }>('[eventiq] event succeeded'),
-    failed: createAction<{ event: TEventName }>('[eventiq] event failed'),
-    skipped: createAction<{ event: TEventName }>('[eventiq] event skipped'),
+    planSubmitted: createAction<ExecutionPlan<TExecutableConfigurationName, TEventName>>(
+      '[eventiq] execution plan submitted',
+    ),
+    eventSucceeded: createAction<{ name: TEventName }>('[eventiq] event succeeded'),
+    eventFailed: createAction<{ name: TEventName }>('[eventiq] event failed'),
+    eventSkipped: createAction<{ name: TEventName }>('[eventiq] event skipped'),
   };
 }
 
-export function createEventiqSchedulingActions<TEventName extends string>(): EventiqSchedulingActions<TEventName> {
+export function createEventiqSchedularActions<TEventName extends string>(): EventiqEventSchedularActions<TEventName> {
   return {
-    started: createAction<{ event: TEventName }>('[eventiq/scheduling] executable started'),
-    succeeded: createAction<{ event: TEventName }>('[eventiq/scheduling] executable succeeded'),
-    failed: createAction<{ event: TEventName }>('[eventiq/scheduling] executable failed'),
-    skipped: createAction<{ event: TEventName }>('[eventiq/scheduling] executable skipped'),
+    started: createAction<{ name: TEventName }>('[eventiq][scheduling] execution started'),
+    succeeded: createAction<{ name: TEventName }>('[eventiq][scheduling] execution succeeded'),
+    failed: createAction<{ name: TEventName }>('[eventiq][scheduling] execution failed'),
+    skipped: createAction<{ name: TEventName }>('[eventiq][scheduling] execution skipped'),
   };
 }

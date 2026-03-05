@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 import type { ListenerMiddlewareInstance, ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
-import { EventiqSchedulingActions, EventiqStore } from '../types/event.ts';
+import { EventiqEventSchedularActions, EventiqStore } from '../types/planEvent.ts';
 
 export function createEventiqHooks<TEventName extends string>(
   listener: ListenerMiddlewareInstance<EventiqStore, ThunkDispatch<EventiqStore, unknown, UnknownAction>>,
-  schedulingActions: EventiqSchedulingActions<TEventName>,
+  schedulingActions: EventiqEventSchedularActions<TEventName>,
 ) {
   function useEventStarted(name: TEventName, callback: () => void | Promise<void>) {
     const callbackRef = useRef(callback);
@@ -14,7 +14,7 @@ export function createEventiqHooks<TEventName extends string>(
       const unsubscribeListener = listener.startListening({
         actionCreator: schedulingActions.started,
         effect: (action) => {
-          if (action.payload.event === name) {
+          if (action.payload.name === name) {
             callbackRef.current();
           }
         },
@@ -31,7 +31,7 @@ export function createEventiqHooks<TEventName extends string>(
       const unsubscribeListener = listener.startListening({
         actionCreator: schedulingActions.succeeded,
         effect: (action) => {
-          if (action.payload.event === name) {
+          if (action.payload.name === name) {
             callbackRef.current();
           }
         },

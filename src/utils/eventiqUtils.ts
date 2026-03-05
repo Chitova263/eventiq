@@ -1,81 +1,137 @@
-import { Event, ExecutableEvent } from '../types/event.ts';
+import {
+  PlanEvent,
+  ExecutableEvent,
+  ExecutablePlan,
+  ExecutionPlan,
+  ExecutableEventDependant,
+} from '../types/planEvent.ts';
 
-export function transformToExecutableEvents<TEventName extends string>(
-  events: Event<TEventName>[],
-): ExecutableEvent<TEventName>[] {
-  const eventMap = new Map<TEventName, ExecutableEvent<TEventName>>();
-
-  for (const event of events) {
-    eventMap.set(event.name, {
-      id: crypto.randomUUID(),
-      name: event.name,
-      status: 'IDLE',
-      needs: [],
-      dependants: [],
-      outcome: null,
-      startTime: null,
-      endTime: null,
-    });
+export class EventiqStoreUtils {
+  public static mapExecutionPlanExecutablePlan<TPlanName extends string, TEventName extends string>(
+    executionPlan: ExecutionPlan<TPlanName, TEventName>,
+  ): ExecutablePlan<TPlanName, TEventName> {
+    return {
+      name: executionPlan.name,
+      events: EventiqStoreUtils.mapPlanEventsToExecutableEvents(executionPlan.events),
+    };
   }
 
-  for (const event of events) {
-    const executableEvent = eventMap.get(event.name)!;
+  private static mapPlanEventsToExecutableEvents<TEventName extends string>(
+    events: readonly PlanEvent<TEventName>[],
+  ): ExecutableEvent<TEventName>[] {
+    const eventMap = new Map<TEventName, ExecutableEvent<TEventName>>();
 
-    for (const needName of event.needs) {
-      const dependency = eventMap.get(needName);
-      if (dependency) {
-        executableEvent.needs.push(dependency);
-        dependency.dependants.push({
-          id: executableEvent.id,
-          name: executableEvent.name,
-        });
+    for (const event of events) {
+      eventMap.set(event.name, {
+        id: crypto.randomUUID(),
+        name: event.name,
+        status: 'IDLE',
+        needs: [],
+        dependants: [],
+        outcome: null,
+        startTime: null,
+        endTime: null,
+      });
+    }
+
+    for (const event of events) {
+      const executableEvent = eventMap.get(event.name)!;
+      const needs = executableEvent.needs;
+      const needNames = Array.isArray(event.needs) ? event.needs : [];
+
+      for (const needName of needNames) {
+        const dependency = eventMap.get(needName);
+        if (dependency) {
+          needs.push(dependency);
+          dependency.dependants.push({
+            id: executableEvent.id,
+            name: executableEvent.name,
+          });
+        }
+      }
+    }
+
+    for (const executableEvent of eventMap.values()) {
+      if (executableEvent.needs.length === 0) {
+        executableEvent.status = 'READY';
+      } else {
+        executableEvent.status = 'BLOCKED';
+      }
+    }
+
+    return Array.from(eventMap.values());
+  }
+
+  public static findExecutableEventByName<TPlanName extends string, TEventName extends string>(
+    queue: ExecutablePlan<TPlanName, TEventName>[],
+    name: TEventName,
+  ): ExecutableEvent<TEventName> | null {
+    for (const plan of queue) {
+      const executableEvent = plan.events.find((evt) => evt.name === name);
+      if (executableEvent) {
+        return executableEvent;
+      }
+    }
+    return null;
+  }
+
+  public static unblockEventDependants<TPlanName extends string, TEventName extends string>(
+    queue: ExecutablePlan<TPlanName, TEventName>[],
+    executableEvent: ExecutableEvent<TEventName>,
+  ): void {
+    const unblockEventIds = executableEvent.dependants.map((evt: ExecutableEventDependant<TEventName>) => evt.id);
+    const unblockEventIdSet = new Set(unblockEventIds);
+    for (const plan of queue) {
+      for (const candidateExecutableEvent of plan.events) {
+        if (unblockEventIdSet.has(candidateExecutableEvent.id)) {
+          // Check if event's needs all have completed successfully
+          const needs = EventiqStoreUtils.findEventNeedsExecutableEvents(candidateExecutableEvent.name, queue);
+          const allNeedsCompleted = needs.every((need) => need.status === 'COMPLETE');
+          if (needs.length > 0 && allNeedsCompleted) {
+            candidateExecutableEvent.status = 'READY';
+            candidateExecutableEvent.startTime = Date.now();
+          }
+        }
       }
     }
   }
 
-  for (const executableEvent of eventMap.values()) {
-    executableEvent.status = executableEvent.needs.length === 0 ? 'READY' : 'BLOCKED';
+  private static findEventNeedsExecutableEvents<TPlanName extends string, TEventName extends string>(
+    name: TEventName,
+    queue: ExecutablePlan<TPlanName, TEventName>[],
+  ): ExecutableEvent<TEventName>[] {
+    for (const plan of queue) {
+      const event = plan.events.find((evt) => evt.name === name);
+      if (event) {
+        const needNames = event.needs.map((need) => need.name);
+        return plan.events.filter((evt) => needNames.includes(evt.name));
+      }
+    }
+    return [];
   }
-
-  return Array.from(eventMap.values());
 }
 
-export function updateEvent(
-  queue: ExecutableEvent<string>[],
-  name: string,
-  updates: Partial<ExecutableEvent<string>>,
-): ExecutableEvent<string>[] {
-  return queue.map((event) => (event.name === name ? { ...event, ...updates } : event));
-}
-
-export function unblockDependants(queue: ExecutableEvent<string>[]): ExecutableEvent<string>[] {
-  return queue.map((event) => {
-    if (event.status !== 'BLOCKED') return event;
-    const allNeedsMet = event.needs.every((need) => {
-      const actual = queue.find((e) => e.name === need.name);
-      return actual && (actual.status === 'COMPLETE' || actual.status === 'SKIPPED');
-    });
-    return allNeedsMet ? { ...event, status: 'READY' as const } : event;
-  });
-}
-
-export function skipDependants(queue: ExecutableEvent<string>[], failedName: string): ExecutableEvent<string>[] {
-  let updated = queue.map((event) => {
-    if (event.status !== 'BLOCKED') return event;
-    const dependsOnFailed = event.needs.some((need) => need.name === failedName);
-    if (!dependsOnFailed) return event;
-    return {
-      ...event,
-      status: 'SKIPPED' as const,
-      outcome: 'SKIPPED' as const,
-      endTime: Date.now(),
-    };
-  });
-
-  const newlySkipped = updated.filter((e, i) => e.status === 'SKIPPED' && queue[i].status !== 'SKIPPED');
-  for (const skipped of newlySkipped) {
-    updated = skipDependants(updated, skipped.name);
-  }
-
-  return updated;
-}
+// export function skipDependants(
+//   queue: readonly ExecutableEvent<string>[],
+//   failedName: string,
+// ): ExecutableEvent<string>[] {
+//   let updated = queue.map((event) => {
+//     if (event.status !== 'BLOCKED') return event;
+//     const dependsOnFailed = event.needs.some((need) => need.name === failedName);
+//     if (!dependsOnFailed) return event;
+//     return {
+//       ...event,
+//       status: 'SKIPPED' as const,
+//       outcome: 'SKIPPED' as const,
+//       endTime: Date.now(),
+//     };
+//   });
+//
+//   const newlySkipped = updated.filter((e, i) => e.status === 'SKIPPED' && queue[i].status !== 'SKIPPED');
+//   for (const skipped of newlySkipped) {
+//     updated = skipDependants(updated, skipped.name);
+//   }
+//
+//   return updated
+//
+// }

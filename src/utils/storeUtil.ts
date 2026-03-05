@@ -1,7 +1,7 @@
-import { ExecutableEvent, EventConfig } from '../types/event.ts';
+import { ExecutableEvent, ExecutablePlan } from '../types/planEvent.ts';
 
 export class StoreUtil {
-  public static getReadyEvents(queue: EventConfig<string, string, ExecutableEvent<string>>[]): ExecutableEvent<string>[] {
-    return queue.flatMap((config) => config.events.filter((event) => event.status === 'READY'));
+  public static getReadyEvents(queue: ExecutablePlan<string, string>[]): ExecutableEvent<string>[] {
+    return queue.flatMap((plan) => plan.events.filter((event) => event.status === 'READY'));
   }
 }

@@ -11,7 +11,7 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: true,
+      serializableCheck: false,
     }).prepend(eventiq.listener.middleware),
 });
 

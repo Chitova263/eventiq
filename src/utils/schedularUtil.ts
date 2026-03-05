@@ -1,16 +1,16 @@
-import { ExecutableEvent } from 'eventiq';
-import { EventiqDispatch, EventiqSchedulingActions } from '../types/event.ts';
+import { ExecutableEvent } from '../types/planEvent.ts';
+import { EventiqDispatch, EventiqEventSchedularActions } from '../types/planEvent.ts';
 
 export class SchedulerUtil {
   public static startReadyEvents<TEventName extends string>(
     events: ExecutableEvent<string>[],
     dispatch: EventiqDispatch,
-    eventiqSchedulingActions: EventiqSchedulingActions<TEventName>,
+    eventiqSchedulingActions: EventiqEventSchedularActions<TEventName>,
   ) {
     for (const event of events) {
       dispatch(
         eventiqSchedulingActions.started({
-          event: event.name as TEventName,
+          name: event.name as TEventName,
         }),
       );
     }
