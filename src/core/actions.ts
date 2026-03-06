@@ -17,9 +17,9 @@ export function createEventiqActions<
 
 export function createEventiqSchedularActions<TEventName extends string>(): EventiqEventSchedularActions<TEventName> {
   return {
-    started: createAction<{ name: TEventName }>('[eventiq][scheduling] execution started'),
-    succeeded: createAction<{ name: TEventName }>('[eventiq][scheduling] execution succeeded'),
-    failed: createAction<{ name: TEventName }>('[eventiq][scheduling] execution failed'),
-    skipped: createAction<{ name: TEventName }>('[eventiq][scheduling] execution skipped'),
+    started: createAction<{ name: TEventName }>('[eventiq/scheduling/started]'),
+    succeeded: createAction<{ name: TEventName }>('[eventiq/scheduling/succeeded]'),
+    failed: createAction<{ name: TEventName }>('[eventiq/scheduling/failed]'),
+    skipped: createAction<{ name: TEventName }>('[eventiq/scheduling/skipped]'),
   };
 }

@@ -17,7 +17,7 @@ export const logger = {
 
   debug(...args: unknown[]) {
     if (LOG_LEVELS[currentLevel] <= LOG_LEVELS.debug) {
-      console.log('[eventiq]', ...args);
+      console.log('', ...args);
     }
   },
 

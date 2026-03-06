@@ -1,14 +1,15 @@
 import type {
-  PlanEvent,
   ExecutableEvent,
-  ExecutablePlan,
-  ExecutionPlan,
   ExecutableEventDependant,
-  EventiqStoreState,
+  ExecutablePlan,
+  ExecutionOutcome,
+  ExecutionPlan,
+  ExecutionStatus,
+  PlanEvent,
 } from '../types/planEvent.ts';
 
 export class EventiqStoreUtils {
-  public static mapExecutionPlanExecutablePlan<TPlanName extends string, TEventName extends string>(
+  public static getExecutablePlan<TPlanName extends string, TEventName extends string>(
     executionPlan: ExecutionPlan<TPlanName, TEventName>,
   ): ExecutablePlan<TPlanName, TEventName> {
     return {
@@ -17,10 +18,10 @@ export class EventiqStoreUtils {
     };
   }
 
-  public static unblockDependants<TPlanName extends string, TEventName extends string>(
-    queue: EventiqStoreState<TPlanName, TEventName>['queue'],
+  public static unblockCompletedEventDependants<TPlanName extends string, TEventName extends string>(
+    queue: ExecutablePlan<TPlanName, TEventName>[],
     completedName: string,
-  ): EventiqStoreState<TPlanName, TEventName>['queue'] {
+  ): ExecutablePlan<TPlanName, TEventName>[] {
     return queue.map((plan) => ({
       ...plan,
       events: plan.events.map((event) => {
@@ -31,13 +32,45 @@ export class EventiqStoreUtils {
           (need) => plan.events.find((e) => e.name === need.name)?.status === 'COMPLETE',
         );
         if (!allNeedsMet) return event;
-        return { ...event, status: 'READY' as const };
+        return { ...event, status: 'READY' };
       }),
     }));
   }
 
+  public static completeExecutableEvent<TPlanName extends string, TEventName extends string>(
+    queue: ExecutablePlan<TPlanName, TEventName>[],
+    name: TEventName,
+    outcome: ExecutionOutcome,
+  ): ExecutablePlan<TPlanName, TEventName>[] {
+    return queue.map((plan): ExecutablePlan<TPlanName, TEventName> => {
+      return {
+        ...plan,
+        events: plan.events.map((event): ExecutableEvent<TEventName> => {
+          if (event.name !== name) return event;
+          return { ...event, status: 'COMPLETE', outcome, endTime: Date.now() };
+        }),
+      };
+    });
+  }
+
+  public static updateExecutableEventStatus<TPlanName extends string, TEventName extends string>(
+    queue: ExecutablePlan<TPlanName, TEventName>[],
+    name: TEventName,
+    status: ExecutionStatus,
+  ): ExecutablePlan<TPlanName, TEventName>[] {
+    return queue.map((plan): ExecutablePlan<TPlanName, TEventName> => {
+      return {
+        ...plan,
+        events: plan.events.map((event): ExecutableEvent<TEventName> => {
+          if (event.name !== name) return event;
+          return { ...event, status };
+        }),
+      };
+    });
+  }
+
   private static mapPlanEventsToExecutableEvents<TEventName extends string>(
-    events: readonly PlanEvent<TEventName>[],
+    events: PlanEvent<TEventName>[],
   ): ExecutableEvent<TEventName>[] {
     const eventMap = new Map<TEventName, ExecutableEvent<TEventName>>();
 
@@ -82,7 +115,7 @@ export class EventiqStoreUtils {
     return Array.from(eventMap.values());
   }
 
-  public static findExecutableEventByName<TPlanName extends string, TEventName extends string>(
+  public static getExecutableEvent<TPlanName extends string, TEventName extends string>(
     queue: ExecutablePlan<TPlanName, TEventName>[],
     name: TEventName,
   ): ExecutableEvent<TEventName> | null {
