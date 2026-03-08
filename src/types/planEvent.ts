@@ -1,4 +1,4 @@
-import type { ActionCreatorWithPayload, ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
+import type { ActionCreatorWithPayload } from '@reduxjs/toolkit';
 
 export type PlanEvent<TEventName extends string> = {
   name: TEventName;
@@ -39,9 +39,7 @@ export type EventiqStoreState<TPlanName extends string = string, TEventName exte
 
 export interface EventiqActions<TPlanName extends string, TEventName extends string = string> {
   planSubmitted: ActionCreatorWithPayload<ExecutionPlan<TPlanName, TEventName>>;
-  eventSucceeded: ActionCreatorWithPayload<{ name: TEventName }>;
-  eventFailed: ActionCreatorWithPayload<{ name: TEventName }>;
-  eventSkipped: ActionCreatorWithPayload<{ name: TEventName }>;
+  completed: ActionCreatorWithPayload<{ name: TEventName; outcome: ExecutionOutcome }>;
 }
 
 export interface EventiqEventSchedularActions<TEventName extends string> {
@@ -51,8 +49,6 @@ export interface EventiqEventSchedularActions<TEventName extends string> {
   skipped: ActionCreatorWithPayload<{ name: TEventName }>;
 }
 
-export type EventiqStore = {
-  eventiq: EventiqStoreState;
+export type EventiqStore<TPlanName extends string, TEventName extends string> = {
+  eventiq: EventiqStoreState<TPlanName, TEventName>;
 };
-
-export type EventiqDispatch = ThunkDispatch<EventiqStore, unknown, UnknownAction>;

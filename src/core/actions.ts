@@ -1,17 +1,18 @@
 import { createAction } from '@reduxjs/toolkit';
-import type { ExecutionPlan, EventiqActions, EventiqEventSchedularActions } from '../types/planEvent.ts';
+import type {
+  ExecutionPlan,
+  EventiqActions,
+  EventiqEventSchedularActions,
+  ExecutionOutcome,
+} from '../types/planEvent.ts';
 
-export function createEventiqActions<
-  TExecutableConfigurationName extends string,
-  TEventName extends string,
->(): EventiqActions<TExecutableConfigurationName, TEventName> {
+export function createEventiqActions<TPlanName extends string, TEventName extends string>(): EventiqActions<
+  TPlanName,
+  TEventName
+> {
   return {
-    planSubmitted: createAction<ExecutionPlan<TExecutableConfigurationName, TEventName>>(
-      '[eventiq] execution plan submitted',
-    ),
-    eventSucceeded: createAction<{ name: TEventName }>('[eventiq] event succeeded'),
-    eventFailed: createAction<{ name: TEventName }>('[eventiq] event failed'),
-    eventSkipped: createAction<{ name: TEventName }>('[eventiq] event skipped'),
+    planSubmitted: createAction<ExecutionPlan<TPlanName, TEventName>>('[eventiq/plan submitted]'),
+    completed: createAction<{ name: TEventName; outcome: ExecutionOutcome }>('[eventiq/event completed]'),
   };
 }
 

@@ -220,9 +220,7 @@ function NotificationsWidget() {
     <div className="widget widget-notifications">
       <div className="widget-header">
         Notifications
-        {notifications && (
-          <span className="notif-count">{notifications.filter((n) => !n.read).length}</span>
-        )}
+        {notifications && <span className="notif-count">{notifications.filter((n) => !n.read).length}</span>}
       </div>
       {(!status || status === 'IDLE' || status === 'BLOCKED' || status === 'READY') && (
         <div className="widget-placeholder">Needs user.notificationToken</div>
@@ -350,39 +348,42 @@ export default function ProfilePage() {
   eventiq.useEventStarted('fetch-user', async () => {
     const user = await api.fetchUser();
     dispatch(apiActions.setUser(user));
-    dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-user' }));
+    dispatch(eventiq.actions.completed({ name: 'fetch-user', outcome: 'SUCCESS' }));
   });
 
   eventiq.useEventStarted('fetch-preferences', async () => {
     const { user } = store.getState().api;
     const prefs = await api.fetchPreferences(user!.settingsId);
     dispatch(apiActions.setPreferences(prefs));
-    dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-preferences' }));
+    dispatch(eventiq.actions.completed({ name: 'fetch-preferences', outcome: 'SUCCESS' }));
   });
 
   eventiq.useEventStarted('fetch-teams', async () => {
     const { user } = store.getState().api;
     const teams = await api.fetchTeams(user!.orgId);
     dispatch(apiActions.setTeams(teams));
-    dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-teams' }));
+    dispatch(eventiq.actions.completed({ name: 'fetch-teams', outcome: 'SUCCESS' }));
   });
 
   eventiq.useEventStarted('fetch-permissions', async () => {
     const { user, teams } = store.getState().api;
-    const perms = await api.fetchPermissions(user!.id, teams!.map((t) => t.id));
+    const perms = await api.fetchPermissions(
+      user!.id,
+      teams!.map((t) => t.id),
+    );
     dispatch(apiActions.setPermissions(perms));
-    dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-permissions' }));
+    dispatch(eventiq.actions.completed({ name: 'fetch-permissions', outcome: 'SUCCESS' }));
   });
 
   eventiq.useEventStarted('fetch-notifications', async () => {
     const { user } = store.getState().api;
     const notifs = await api.fetchNotifications(user!.notificationToken);
     dispatch(apiActions.setNotifications(notifs));
-    dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-notifications' }));
+    dispatch(eventiq.actions.completed({ name: 'fetch-notifications', outcome: 'SUCCESS' }));
   });
 
   eventiq.useEventStarted('page-ready', () => {
-    setTimeout(() => dispatch(eventiq.actions.eventSucceeded({ name: 'page-ready' })), 200);
+    setTimeout(() => dispatch(eventiq.actions.completed({ name: 'page-ready', outcome: 'SUCCESS' })), 200);
   });
 
   return (

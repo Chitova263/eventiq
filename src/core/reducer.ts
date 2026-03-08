@@ -13,37 +13,30 @@ export function createEventiqReducer<TPlanName extends string, TEventName extend
     action: UnknownAction,
   ): EventiqStoreState<TPlanName, TEventName> => {
     if (eventiqActions.planSubmitted.match(action)) {
-      const newExecutablePlan = EventiqStoreUtils.getExecutablePlan(action.payload);
-      const updatedQueue = [...state.queue, newExecutablePlan];
-      return { ...state, queue: updatedQueue };
+      const newExecutablePlan = EventiqStoreUtils.generateExecutablePlan(action.payload);
+      return { ...state, queue: [...state.queue, newExecutablePlan] };
     }
 
     if (eventiqEventSchedularActions.started.match(action)) {
-      if (!EventiqStoreUtils.getExecutableEvent(state.queue, action.payload.name)) {
-        throw new Error(`Unexpected Error Event (${action.payload.name}) does not exist`);
-      }
+      const { name } = action.payload;
+      EventiqStoreUtils.throwIfEventNotExist(state.queue, name);
       return {
         ...state,
-        queue: EventiqStoreUtils.updateExecutableEventStatus(state.queue, action.payload.name, 'RUNNING'),
+        queue: EventiqStoreUtils.updateExecutableEventStatus(state.queue, name, 'RUNNING'),
       };
     }
 
-    if (eventiqActions.eventSucceeded.match(action) || eventiqActions.eventSkipped.match(action)) {
-      if (!EventiqStoreUtils.getExecutableEvent(state.queue, action.payload.name)) {
-        throw new Error(`Unexpected Error Event (${action.payload.name}) does not exist`);
+    if (eventiqActions.completed.match(action)) {
+      const { name, outcome } = action.payload;
+      EventiqStoreUtils.throwIfEventNotExist(state.queue, name);
+      if (outcome === 'FAILURE') {
+        return {
+          ...state,
+          queue: EventiqStoreUtils.completeExecutableEvent(state.queue, name, outcome),
+        };
       }
-      const updated = EventiqStoreUtils.completeExecutableEvent(state.queue, action.payload.name, 'SUCCESS');
-      return { ...state, queue: EventiqStoreUtils.unblockCompletedEventDependants(updated, action.payload.name) };
-    }
-
-    if (eventiqActions.eventFailed.match(action)) {
-      if (!EventiqStoreUtils.getExecutableEvent(state.queue, action.payload.name)) {
-        throw new Error(`Unexpected Error Event (${action.payload.name}) does not exist`);
-      }
-      return {
-        ...state,
-        queue: EventiqStoreUtils.completeExecutableEvent(state.queue, action.payload.name, 'FAILURE'),
-      };
+      const updated = EventiqStoreUtils.completeExecutableEvent(state.queue, name, outcome);
+      return { ...state, queue: EventiqStoreUtils.unblockCompletedEventDependants(updated, name) };
     }
 
     return state;

@@ -2,20 +2,21 @@
 
 [Live Demo](https://eventiq-three.vercel.app)
 
-A dependency-aware event orchestration library for React + Redux Toolkit. Define execution plans as directed acyclic graphs, and eventiq handles scheduling, dependency resolution, and lifecycle tracking.
+A dependency-aware event orchestration library for React + Redux Toolkit. Define execution plans as directed acyclic graphs (DAGs), and eventiq handles scheduling, dependency resolution, concurrent execution, and lifecycle tracking. 
 
-> **Note:** This library is experimental and not production-ready. APIs may change without notice. Use at your own risk.
+eventiq implements an incremental variant of Kahn's algorithm, executed reactively across Redux reducer and middleware cycles:
+
 
 ## Why eventiq
 
-Modern applications often involve complex async workflows - interdependent API calls, ordered initialization sequences, and coordinated loading states. eventiq provides a declarative approach to defining these workflows as dependency graphs, automatically resolving execution order and maximizing concurrency.
+Modern applications involve complex async workflows — interdependent API calls, ordered initialization sequences, and coordinated loading states. eventiq provides a declarative approach to defining these workflows as dependency graphs, automatically resolving execution order and maximizing concurrency.
 
-- **Declarative dependency graphs** - define relationships between events, not execution order
-- **Automatic scheduling** - events execute as soon as their dependencies resolve
-- **Parallel execution** - independent events run concurrently for optimal performance
-- **Redux-native** - integrates seamlessly as a standard reducer + listener middleware
-- **React hooks** - subscribe to event lifecycle directly from components
-- **Type-safe** - fully generic over plan and event names
+- **Declarative dependency graphs** — define relationships between events, not execution order
+- **Automatic concurrent scheduling** — events execute as soon as their dependencies resolve, independent events run in parallel
+- **DAG validation** — circular dependencies, duplicate event names, and missing dependency references are caught at plan submission time
+- **Redux-native** — integrates as a standard reducer + listener middleware
+- **React hooks** — subscribe to event lifecycle directly from components
+- **Type-safe** — fully generic over plan and event names
 
 ## Install
 
@@ -27,7 +28,7 @@ Peer dependencies: `react >= 18`, `react-dom >= 18`, `@reduxjs/toolkit >= 2`
 
 ## Quick start
 
-### 1. Create an eventiq instance and store
+### 1. Create an eventiq instance and configure the store
 
 ```ts
 // store.ts
@@ -51,137 +52,10 @@ export const store = configureStore({
 });
 ```
 
-### 2. Define your app state and trigger actions
-
-```ts
-// apiSlice.ts
-import { createSlice, createAction } from '@reduxjs/toolkit';
-
-export const fetchUser = createAction('api/fetchUser');
-export const fetchPosts = createAction('api/fetchPosts');
-export const fetchAnalytics = createAction('api/fetchAnalytics');
-
-export const apiSlice = createSlice({
-    name: 'api',
-    initialState: { user: null, posts: null, analytics: null },
-    reducers: {
-        setUser(state, action) { state.user = action.payload; },
-        setPosts(state, action) { state.posts = action.payload; },
-        setAnalytics(state, action) { state.analytics = action.payload; },
-    },
-});
-```
-
-### 3. Set up listeners to handle side effects
-
-```ts
-// listeners.ts
-import { apiSlice, fetchUser, fetchPosts, fetchAnalytics } from './apiSlice';
-import { eventiq } from './store';
-import * as api from './api';
-
-eventiq.listener.startListening({
-    actionCreator: fetchUser,
-    effect: async (action, listenerApi) => {
-        const user = await api.getUser();
-        listenerApi.dispatch(apiSlice.actions.setUser(user));
-        listenerApi.dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-user' }));
-    },
-});
-
-eventiq.listener.startListening({
-    actionCreator: fetchPosts,
-    effect: async (action, listenerApi) => {
-        const { user } = listenerApi.getState().api;
-        const posts = await api.getPosts(user.id);
-        listenerApi.dispatch(apiSlice.actions.setPosts(posts));
-        listenerApi.dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-posts' }));
-    },
-});
-
-eventiq.listener.startListening({
-    actionCreator: fetchAnalytics,
-    effect: async (action, listenerApi) => {
-        const { posts } = listenerApi.getState().api;
-        const analytics = await api.getAnalytics(posts.map(p => p.id));
-        listenerApi.dispatch(apiSlice.actions.setAnalytics(analytics));
-        listenerApi.dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-analytics' }));
-    },
-});
-```
-
-### 4. Component dispatches actions
-
-```tsx
-// ProfilePage.tsx
-import { useDispatch } from 'react-redux';
-import { eventiq } from './store';
-import { fetchUser, fetchPosts, fetchAnalytics } from './apiSlice';
-import type { ExecutionPlan } from 'eventiq';
-
-const profilePlan: ExecutionPlan<'profile-load', EventName> = {
-    name: 'profile-load',
-    events: [
-        { name: 'fetch-user', needs: [] },
-        { name: 'fetch-posts', needs: ['fetch-user'] },
-        { name: 'fetch-analytics', needs: ['fetch-posts'] },
-    ],
-};
-
-function ProfilePage() {
-    const dispatch = useDispatch();
-
-    eventiq.useEventStarted('fetch-user', () => dispatch(fetchUser()));
-    eventiq.useEventStarted('fetch-posts', () => dispatch(fetchPosts()));
-    eventiq.useEventStarted('fetch-analytics', () => dispatch(fetchAnalytics()));
-
-    return (
-        <button onClick={() => dispatch(eventiq.actions.planSubmitted(profilePlan))}>
-            Load Profile
-        </button>
-    );
-}
-```
-
-The component's only job is to dispatch. All API calls, state updates, and eventiq signaling happen in listeners.
-
-## How it works: Realistic API orchestration
-
-Imagine a profile page that loads a user, then fetches their posts, and finally fetches analytics, each step depending on data from the previous one. The key pattern: **components only dispatch actions**, and **all async/API logic lives in listeners**.
-
-### 1. Define your app state and actions
-
-```ts
-// apiSlice.ts
-import { createSlice, createAction } from '@reduxjs/toolkit';
-
-// Actions the component dispatches to kick off each fetch
-export const fetchUser = createAction('api/fetchUser');
-export const fetchPosts = createAction('api/fetchPosts');
-export const fetchAnalytics = createAction('api/fetchAnalytics');
-
-export const apiSlice = createSlice({
-    name: 'api',
-    initialState: {
-        user: null as User | null,
-        posts: null as Post[] | null,
-        analytics: null as Analytics | null,
-        error: null as string | null,
-    },
-    reducers: {
-        setUser(state, action) { state.user = action.payload; },
-        setPosts(state, action) { state.posts = action.payload; },
-        setAnalytics(state, action) { state.analytics = action.payload; },
-        setError(state, action) { state.error = action.payload; },
-    },
-});
-```
-
 ### 2. Define the execution plan
 
 ```ts
-type EventName = 'fetch-user' | 'fetch-posts' | 'fetch-analytics';
-type PlanName = 'profile-load';
+import type { ExecutionPlan } from 'eventiq';
 
 const profilePlan: ExecutionPlan<PlanName, EventName> = {
     name: 'profile-load',
@@ -193,76 +67,83 @@ const profilePlan: ExecutionPlan<PlanName, EventName> = {
 };
 ```
 
-### 3. Set up listeners
+### 3. Define trigger actions and set up listeners
 
-Listeners listen for the actions your component dispatches, do the async work, store results, and signal eventiq.
+Listeners handle all async work — API calls, state updates, and eventiq signaling.
+
+```ts
+// actions.ts
+import { createAction } from '@reduxjs/toolkit';
+
+export const fetchUser = createAction('api/fetchUser');
+export const fetchPosts = createAction('api/fetchPosts');
+export const fetchAnalytics = createAction('api/fetchAnalytics');
+```
 
 ```ts
 // listeners.ts
-import { apiSlice, fetchUser, fetchPosts, fetchAnalytics } from './apiSlice';
-import { eventiq } from './store';
+import { eventiq, store } from './store';
+import { apiSlice } from './apiSlice';
+import { fetchUser, fetchPosts, fetchAnalytics } from './actions';
 import * as api from './api';
 
-// fetch-user: call API, store result, signal eventiq
 eventiq.listener.startListening({
     actionCreator: fetchUser,
-    effect: async (action, listenerApi) => {
+    effect: async (_, listenerApi) => {
         try {
             const user = await api.getUser();
             listenerApi.dispatch(apiSlice.actions.setUser(user));
-            listenerApi.dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-user' }));
-        } catch (err) {
-            listenerApi.dispatch(apiSlice.actions.setError('Failed to load user'));
-            listenerApi.dispatch(eventiq.actions.eventFailed({ name: 'fetch-user' }));
+            listenerApi.dispatch(eventiq.actions.completed({ name: 'fetch-user', outcome: 'SUCCESS' }));
+        } catch {
+            listenerApi.dispatch(eventiq.actions.completed({ name: 'fetch-user', outcome: 'FAILURE' }));
         }
     },
 });
 
-// fetch-posts: read user from store, call API, signal eventiq
 eventiq.listener.startListening({
     actionCreator: fetchPosts,
-    effect: async (action, listenerApi) => {
+    effect: async (_, listenerApi) => {
         try {
             const { user } = listenerApi.getState().api;
             const posts = await api.getPosts(user!.id);
             listenerApi.dispatch(apiSlice.actions.setPosts(posts));
-            listenerApi.dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-posts' }));
-        } catch (err) {
-            listenerApi.dispatch(apiSlice.actions.setError('Failed to load posts'));
-            listenerApi.dispatch(eventiq.actions.eventFailed({ name: 'fetch-posts' }));
+            listenerApi.dispatch(eventiq.actions.completed({ name: 'fetch-posts', outcome: 'SUCCESS' }));
+        } catch {
+            listenerApi.dispatch(eventiq.actions.completed({ name: 'fetch-posts', outcome: 'FAILURE' }));
         }
     },
 });
 
-// fetch-analytics: read posts from store, call API, signal eventiq
 eventiq.listener.startListening({
     actionCreator: fetchAnalytics,
-    effect: async (action, listenerApi) => {
+    effect: async (_, listenerApi) => {
         try {
             const { posts } = listenerApi.getState().api;
             const analytics = await api.getAnalytics(posts!.map(p => p.id));
             listenerApi.dispatch(apiSlice.actions.setAnalytics(analytics));
-            listenerApi.dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-analytics' }));
-        } catch (err) {
-            listenerApi.dispatch(apiSlice.actions.setError('Failed to load analytics'));
-            listenerApi.dispatch(eventiq.actions.eventFailed({ name: 'fetch-analytics' }));
+            listenerApi.dispatch(eventiq.actions.completed({ name: 'fetch-analytics', outcome: 'SUCCESS' }));
+        } catch {
+            listenerApi.dispatch(eventiq.actions.completed({ name: 'fetch-analytics', outcome: 'FAILURE' }));
         }
     },
 });
 ```
 
-### 4. Component just dispatches actions
+### 4. Component dispatches actions
+
+Components only dispatch — no async logic, no direct API calls.
+
 ```tsx
 // ProfilePage.tsx
+import { useDispatch } from 'react-redux';
+import { eventiq } from './store';
+import { fetchUser, fetchPosts, fetchAnalytics } from './actions';
+
 function ProfilePage() {
     const dispatch = useDispatch();
 
-    // When eventiq starts each event, dispatch the corresponding action.
-    // The listener handles everything from there.
     eventiq.useEventStarted('fetch-user', () => dispatch(fetchUser()));
-
     eventiq.useEventStarted('fetch-posts', () => dispatch(fetchPosts()));
-
     eventiq.useEventStarted('fetch-analytics', () => dispatch(fetchAnalytics()));
 
     return (
@@ -276,80 +157,97 @@ function ProfilePage() {
 **The flow:**
 1. Component dispatches `planSubmitted`. eventiq marks `fetch-user` as `READY` (no dependencies).
 2. The scheduler fires `started` for `fetch-user`. The `useEventStarted` hook dispatches `fetchUser()`.
-3. The listener catches `fetchUser`, calls the API, stores the user, and dispatches `eventSucceeded`.
-4. `eventSucceeded` unblocks `fetch-posts`. The scheduler starts it, the hook dispatches `fetchPosts()`, and the listener takes over again.
-5. This continues until all events complete. If any listener throws, `eventFailed` stops that branch.
+3. The listener catches `fetchUser`, calls the API, stores the result, and dispatches `completed`.
+4. `completed` with `SUCCESS` unblocks `fetch-posts`. The scheduler starts it, the hook dispatches `fetchPosts()`, and the listener takes over again.
+5. This continues until all events complete. If any listener catches an error, `FAILURE` stops that branch.
 
-### 5. Conditional logic : Skip events based on store state
+## Execution model
 
-Sometimes you want to skip an event based on what previous steps produced. Check the store in your listener and dispatch `eventSkipped` - eventiq treats it as a completion, so downstream events still unblock.
+eventiq implements an incremental variant of Kahn's algorithm, executed reactively across Redux reducer and middleware cycles:
+
+1. `planSubmitted` → the reducer converts plan events into `ExecutableEvent` objects. Events with no dependencies are marked `READY`, others are `BLOCKED`.
+2. A listener middleware reacts to `planSubmitted` and `completed` actions → finds all `READY` events → dispatches internal `started` actions for each.
+3. `started` → the reducer transitions the event to `RUNNING`. The `useEventStarted` hook fires the user-provided callback.
+4. User code completes work and dispatches `completed({ name, outcome })`. If the outcome is `SUCCESS` or `SKIPPED`, the reducer marks the event `COMPLETE` and unblocks dependants whose needs are now all met.
+5. Newly unblocked events become `READY`, the listener picks them up, and the cycle continues until the DAG is fully resolved.
+
+This reactive approach provides maximum concurrency — independent events run in parallel without any pre-computed ordering step.
+
+## Plan validation
+
+On `planSubmitted`, eventiq validates the execution plan before it enters the queue. The following conditions throw synchronously in the reducer:
+
+| Validation | Error |
+|---|---|
+| Duplicate event names | `Duplicate event name "X"` |
+| Reference to undefined dependency | `Event "X" depends on "Y" which doesn't exist in the plan` |
+| Circular dependencies (Kahn's algorithm) | `Circular dependency detected among events: [X, Y, Z]` |
+
+These checks ensure only valid DAGs are scheduled.
+
+## Error handling
+
+Use the `outcome` field on `completed` to control pipeline behavior:
 
 ```ts
-// actions
-export const fetchPremiumContent = createAction('api/fetchPremiumContent');
-
-// plan
-const plan: ExecutionPlan<PlanName, EventName> = {
-    name: 'profile-load',
-    events: [
-        { name: 'fetch-user', needs: [] },
-        { name: 'fetch-posts', needs: ['fetch-user'] },
-        { name: 'fetch-premium-content', needs: ['fetch-user'] },
-        { name: 'render', needs: ['fetch-posts', 'fetch-premium-content'] },
-    ],
-};
-
-// listener - skip the API call if user isn't premium
 eventiq.listener.startListening({
-    actionCreator: fetchPremiumContent,
-    effect: async (action, listenerApi) => {
-        const { user } = listenerApi.getState().api;
-
-        if (!user!.isPremium) {
-            // No API call needed. Downstream events still unblock.
-            listenerApi.dispatch(eventiq.actions.eventSkipped({ name: 'fetch-premium-content' }));
-            return;
-        }
-
+    actionCreator: fetchPosts,
+    effect: async (_, listenerApi) => {
         try {
-            const content = await api.getPremiumContent(user!.id);
-            listenerApi.dispatch(apiSlice.actions.setPremiumContent(content));
-            listenerApi.dispatch(eventiq.actions.eventSucceeded({ name: 'fetch-premium-content' }));
-        } catch (err) {
-            listenerApi.dispatch(eventiq.actions.eventFailed({ name: 'fetch-premium-content' }));
+            const posts = await api.getPosts(userId);
+            listenerApi.dispatch(apiSlice.actions.setPosts(posts));
+            listenerApi.dispatch(eventiq.actions.completed({ name: 'fetch-posts', outcome: 'SUCCESS' }));
+        } catch {
+            listenerApi.dispatch(eventiq.actions.completed({ name: 'fetch-posts', outcome: 'FAILURE' }));
         }
     },
 });
-
-// component - still just dispatches
-eventiq.useEventStarted('fetch-premium-content', () => dispatch(fetchPremiumContent()));
 ```
 
-**Key points:**
-- `eventSkipped` counts as a completion — dependants still unblock
-- `eventFailed` does **not** unblock dependants — the pipeline stops at that branch
-- Listeners read from the store via `listenerApi.getState()` to make runtime decisions based on data from earlier events
-- Components never contain async logic — they only dispatch actions
+| Outcome | Effect on dependants |
+|---|---|
+| `SUCCESS` | Dependants are unblocked |
+| `SKIPPED` | Dependants are unblocked (treated as a successful completion) |
+| `FAILURE` | Dependants remain `BLOCKED` — the pipeline halts on that branch |
 
+### Conditional skipping
 
-## API
+Skip an event based on runtime state. Downstream events still unblock:
+
+```ts
+eventiq.listener.startListening({
+    actionCreator: fetchPremiumContent,
+    effect: async (_, listenerApi) => {
+        const { user } = listenerApi.getState().api;
+        if (!user!.isPremium) {
+            listenerApi.dispatch(eventiq.actions.completed({ name: 'fetch-premium-content', outcome: 'SKIPPED' }));
+            return;
+        }
+        const content = await api.getPremiumContent(user!.id);
+        listenerApi.dispatch(apiSlice.actions.setPremiumContent(content));
+        listenerApi.dispatch(eventiq.actions.completed({ name: 'fetch-premium-content', outcome: 'SUCCESS' }));
+    },
+});
+```
+
+## API reference
 
 ### `createEventiq<TPlanName, TEventName>()`
 
 Creates an eventiq instance. Returns:
 
-| Property | Description |
-|---|---|
-| `actions.planSubmitted(plan)` | Dispatch to submit an execution plan |
-| `actions.eventSucceeded({ name })` | Signal that an event completed successfully |
-| `actions.eventFailed({ name })` | Signal that an event failed |
-| `actions.eventSkipped({ name })` | Signal that an event was skipped |
-| `reducer` | Redux reducer — mount at `state.eventiq` |
-| `listener` | RTK listener middleware instance |
-| `useEventStarted(name, callback)` | React hook — fires when an event begins executing |
-| `useEventSucceeded(name, callback)` | React hook — fires when an event completes successfully |
+| Property | Type | Description |
+|---|---|---|
+| `actions.planSubmitted(plan)` | `ActionCreator` | Submit an execution plan to the queue |
+| `actions.completed({ name, outcome })` | `ActionCreator` | Signal event completion with outcome |
+| `reducer` | `Reducer` | Redux reducer — mount at `state.eventiq` |
+| `listener` | `ListenerMiddlewareInstance` | RTK listener middleware — prepend to middleware chain |
+| `selectors.selectQueue(state)` | `Selector` | Select the execution queue |
+| `selectors.selectReadyEvents(state)` | `Selector` | Select events in `READY` status |
+| `useEventStarted(name, callback)` | `Hook` | Fires when an event begins executing |
+| `useEventSucceeded(name, callback)` | `Hook` | Fires when internal scheduling marks an event succeeded |
 
-### Execution plan
+### `ExecutionPlan<TPlanName, TEventName>`
 
 ```ts
 type ExecutionPlan<TPlanName, TEventName> = {
@@ -359,51 +257,66 @@ type ExecutionPlan<TPlanName, TEventName> = {
 
 type PlanEvent<TEventName> = {
     name: TEventName;
-    needs: TEventName[];  // dependencies that must complete first
+    needs: TEventName[];  // dependencies that must complete before this event starts
 };
+```
+
+### `ExecutionOutcome`
+
+```ts
+type ExecutionOutcome = 'SUCCESS' | 'FAILURE' | 'SKIPPED';
 ```
 
 ### Event lifecycle
 
-Each event goes through these statuses:
-
 ```
-IDLE → BLOCKED → READY → RUNNING → COMPLETE
+IDLE → READY (no deps) or BLOCKED (has deps)
+BLOCKED → READY (when all needs complete with SUCCESS or SKIPPED)
+READY → RUNNING (scheduler picks up)
+RUNNING → COMPLETE (user dispatches completed)
 ```
 
-| Status | Meaning |
+| Status | Description |
 |---|---|
-| `IDLE` | Initial state |
-| `BLOCKED` | Waiting on dependencies |
-| `READY` | All dependencies met, queued to start |
-| `RUNNING` | Currently executing |
-| `COMPLETE` | Finished (check `outcome` for result) |
+| `IDLE` | Initial state during plan construction |
+| `BLOCKED` | Waiting on one or more dependencies to complete |
+| `READY` | All dependencies satisfied, queued for execution |
+| `RUNNING` | Currently executing user-provided callback |
+| `COMPLETE` | Finished — check `outcome` for `SUCCESS`, `FAILURE`, or `SKIPPED` |
 
-Outcomes on completion: `SUCCESS`, `FAILURE`, or `SKIPPED`.
-
-### Store state
-
-The eventiq reducer manages this state shape:
+### Store state shape
 
 ```ts
 {
     eventiq: {
-        queue: ExecutablePlan[];       // submitted plans with live event state
+        queue: ExecutablePlan[];
         isQueueHandlingException: boolean;
     }
 }
 ```
 
-Each `ExecutablePlan` contains `ExecutableEvent` objects with `id`, `name`, `status`, `outcome`, `startTime`, `endTime`, `needs`, and `dependants`.
+Each `ExecutablePlan` contains `ExecutableEvent` objects:
+
+```ts
+type ExecutableEvent<TEventName> = {
+    id: string;
+    name: TEventName;
+    status: ExecutionStatus;
+    outcome: ExecutionOutcome | null;
+    needs: ExecutableEvent<TEventName>[];
+    dependants: ExecutableEventDependant<TEventName>[];
+    startTime: number | null;
+    endTime: number | null;
+};
+```
 
 ## Demo
 
-The `demo/` directory contains a working app with two examples:
+The `demo/` directory contains a working example:
 
-- **Dashboard Builder** - a widget-based dashboard that loads progressively (layout, theme, data, charts)
-- **API Orchestration** - a profile page where mock API calls depend on each other's results
+- **API Orchestration** — a profile page where mock API calls depend on each other's results, demonstrating fan-out from a single root event
 
-Both include a live pipeline visualization and a store inspector panel.
+Includes a live pipeline visualization and a store inspector panel.
 
 ```bash
 cd demo

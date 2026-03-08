@@ -9,7 +9,7 @@ import type {
 } from '../types/planEvent.ts';
 
 export class EventiqStoreUtils {
-  public static getExecutablePlan<TPlanName extends string, TEventName extends string>(
+  public static generateExecutablePlan<TPlanName extends string, TEventName extends string>(
     executionPlan: ExecutionPlan<TPlanName, TEventName>,
   ): ExecutablePlan<TPlanName, TEventName> {
     return {
@@ -58,15 +58,34 @@ export class EventiqStoreUtils {
     name: TEventName,
     status: ExecutionStatus,
   ): ExecutablePlan<TPlanName, TEventName>[] {
-    return queue.map((plan): ExecutablePlan<TPlanName, TEventName> => {
-      return {
+    return queue.map(
+      (plan: ExecutablePlan<TPlanName, TEventName>): ExecutablePlan<TPlanName, TEventName> => ({
         ...plan,
-        events: plan.events.map((event): ExecutableEvent<TEventName> => {
+        events: plan.events.map((event: ExecutableEvent<TEventName>): ExecutableEvent<TEventName> => {
           if (event.name !== name) return event;
           return { ...event, status };
         }),
-      };
-    });
+      }),
+    );
+  }
+
+  public static throwIfEventNotExist<TPlanName extends string, TEventName extends string>(
+    queue: ExecutablePlan<TPlanName, TEventName>[],
+    name: TEventName,
+  ): void {
+    for (const plan of queue) {
+      const executableEvent = plan.events.find((evt) => evt.name === name);
+      if (executableEvent) {
+        return;
+      }
+    }
+    throw new Error(`[Eventiq] Cannot process event "${name}": no matching event exists in the queue`);
+  }
+
+  public static getReadyEvents<TPlanName extends string, TEventName extends string>(
+    queue: ExecutablePlan<TPlanName, TEventName>[],
+  ): ExecutableEvent<TEventName>[] {
+    return queue.flatMap((plan) => plan.events.filter((event) => event.status === 'READY'));
   }
 
   private static mapPlanEventsToExecutableEvents<TEventName extends string>(
@@ -75,36 +94,26 @@ export class EventiqStoreUtils {
     const eventMap = new Map<TEventName, ExecutableEvent<TEventName>>();
 
     for (const event of events) {
-      eventMap.set(event.name, {
-        id: crypto.randomUUID(),
-        name: event.name,
-        status: 'IDLE',
-        needs: [],
-        dependants: [],
-        outcome: null,
-        startTime: null,
-        endTime: null,
-      });
+      if (eventMap.has(event.name)) {
+        throw new Error(`Duplicate event name "${event.name}"`);
+      }
+      eventMap.set(event.name, EventiqStoreUtils.getIdleExecutableEvent(event));
     }
 
     for (const event of events) {
       const executableEvent = eventMap.get(event.name)!;
-      const needs = executableEvent.needs;
-      const needNames = Array.isArray(event.needs) ? event.needs : [];
-
-      for (const needName of needNames) {
+      for (const needName of event.needs) {
         const dependency = eventMap.get(needName);
-        if (dependency) {
-          needs.push(dependency);
-          dependency.dependants.push({
-            id: executableEvent.id,
-            name: executableEvent.name,
-          });
+        if (!dependency) {
+          throw new Error(`Event "${event.name}" depends on "${needName}" which doesn't exist in the plan`);
         }
+        executableEvent.needs.push(dependency);
+        dependency.dependants.push({
+          id: executableEvent.id,
+          name: executableEvent.name,
+        });
       }
-    }
 
-    for (const executableEvent of eventMap.values()) {
       if (executableEvent.needs.length === 0) {
         executableEvent.status = 'READY';
       } else {
@@ -115,17 +124,19 @@ export class EventiqStoreUtils {
     return Array.from(eventMap.values());
   }
 
-  public static getExecutableEvent<TPlanName extends string, TEventName extends string>(
-    queue: ExecutablePlan<TPlanName, TEventName>[],
-    name: TEventName,
-  ): ExecutableEvent<TEventName> | null {
-    for (const plan of queue) {
-      const executableEvent = plan.events.find((evt) => evt.name === name);
-      if (executableEvent) {
-        return executableEvent;
-      }
-    }
-    return null;
+  private static getIdleExecutableEvent<TEventName extends string>(
+    event: PlanEvent<TEventName>,
+  ): ExecutableEvent<TEventName> {
+    return {
+      id: crypto.randomUUID(),
+      name: event.name,
+      status: 'IDLE',
+      needs: [],
+      dependants: [],
+      outcome: null,
+      startTime: null,
+      endTime: null,
+    };
   }
 
   public static unblockEventDependants<TPlanName extends string, TEventName extends string>(
