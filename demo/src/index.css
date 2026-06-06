@@ -1,68 +1,165 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0f0f0f;
+  color: #e4e4e4;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.app-header {
   display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+.app-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+.app-subtitle {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.tab-nav {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #222;
+  padding-bottom: 0.5rem;
+}
+
+.tab {
+  background: none;
+  border: none;
+  color: #888;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.tab:hover { color: #ccc; background: #1a1a1a; }
+.tab.active { color: #fff; background: #1f1f1f; }
+
+.tab-content { min-height: 400px; }
+
+.tab-header { margin-bottom: 1.5rem; }
+.tab-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: #a78bfa;
+  margin-bottom: 0.5rem;
+}
+
+.tab-desc {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 1rem;
+}
+
+.btn-run {
+  background: #a78bfa;
+  color: #000;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-run:hover { background: #c4b5fd; }
+.btn-secondary { background: #333; color: #ccc; margin-left: 0.5rem; }
+.btn-secondary:hover { background: #444; }
+
+.step-list {
+  margin-bottom: 1.5rem;
+  border: 1px solid #222;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.step-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid #1a1a1a;
+  font-size: 0.85rem;
+}
+
+.step-row:last-child { border-bottom: none; }
+
+.step-status {
+  width: 1.2rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.step-name { flex: 1; }
+
+.step-badge {
+  font-size: 0.7rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  background: #1a1a1a;
+  color: #666;
+}
+
+.step-complete .step-status { color: #4ade80; }
+.step-complete .step-badge { background: #052e16; color: #4ade80; }
+.step-running .step-status { color: #facc15; }
+.step-running .step-badge { background: #422006; color: #facc15; }
+.step-ready .step-status { color: #60a5fa; }
+.step-ready .step-badge { background: #172554; color: #60a5fa; }
+
+.result-panel {
+  border: 1px solid #222;
+  border-radius: 6px;
+  padding: 1.25rem;
+}
+
+.result-panel h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #4ade80;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.result-card {
+  background: #1a1a1a;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.result-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.result-label {
+  font-size: 0.75rem;
+  color: #666;
 }

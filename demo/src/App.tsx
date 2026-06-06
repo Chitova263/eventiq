@@ -1,22 +1,37 @@
-import ProfilePage from './pages/ProfilePage.tsx';
-import StoreVisualizer from './components/StoreVisualizer.tsx';
-import './App.css';
+import { useState } from 'react';
+import DashboardTab from './tabs/DashboardTab';
+import CheckoutTab from './tabs/CheckoutTab';
+import AnalyticsTab from './tabs/AnalyticsTab';
 
-function App() {
+type Tab = 'react' | 'redux' | 'react-query';
+
+export default function App() {
+  const [tab, setTab] = useState<Tab>('react');
+
   return (
-    <div className="app-layout">
-      <div className="header">
-        <div className="header-left">
-          <h1>
-            <span>eventiq</span> demo
-          </h1>
-        </div>
-      </div>
+    <div className="app">
+      <header className="app-header">
+        <h1>eventiq</h1>
+        <span className="app-subtitle">DAG workflow orchestration</span>
+      </header>
 
-      <ProfilePage />
-      <StoreVisualizer />
+      <nav className="tab-nav">
+        <button className={tab === 'react' ? 'tab active' : 'tab'} onClick={() => setTab('react')}>
+          @eventiq/react
+        </button>
+        <button className={tab === 'redux' ? 'tab active' : 'tab'} onClick={() => setTab('redux')}>
+          @eventiq/redux
+        </button>
+        <button className={tab === 'react-query' ? 'tab active' : 'tab'} onClick={() => setTab('react-query')}>
+          @eventiq/react-query
+        </button>
+      </nav>
+
+      <main>
+        {tab === 'react' && <DashboardTab />}
+        {tab === 'redux' && <CheckoutTab />}
+        {tab === 'react-query' && <AnalyticsTab />}
+      </main>
     </div>
   );
 }
-
-export default App;

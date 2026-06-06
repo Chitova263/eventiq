@@ -3,5 +3,9 @@
   "singleQuote": true,
   "tabWidth": 2,
   "trailingComma": "all",
-  "printWidth": 120
+  "printWidth": 120,
+  "arrowParens": "always",
+  "bracketSpacing": true,
+  "endOfLine": "lf",
+  "quoteProps": "as-needed"
 }
